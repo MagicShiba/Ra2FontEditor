@@ -49,9 +49,14 @@ Red Alert 2 font editor.
 编辑字符  
 <img width="70%" src="other/esb.png">
 
-### 字体转换能力展示
-正常字效果不明显,所以放点离谱的
+### 字体转换能力展示  
+正常字效果不明显,所以放点离谱的  
 ![alt text](other/zkk1.png)  
 图一乐的3D效果  
 ![alt text](other/sd1.png)
 ![alt text](other/sd3.png)
+
+
+格式和编辑实现参考:  
+[Westwood BitFont Format](https://moddingwiki.shikadi.net/wiki/Westwood_BitFont_Format)  
+[Nyerguds/WWFontEditor](https://github.com/Nyerguds/WWFontEditor)
