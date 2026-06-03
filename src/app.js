@@ -646,6 +646,36 @@ searchInput.addEventListener('input', () => {
   }
 });
 
+$('search-add-btn').addEventListener('click', () => {
+  if (!font) return;
+  const q = searchInput.value.trim();
+  if (!q) return;
+  const convertSC = $('sc-tc-toggle').checked;
+  const searchQ = convertSC ? scToTc(q) : q;
+  let targetCode = null;
+  if (searchQ.length === 1) targetCode = searchQ.codePointAt(0);
+  else if (/^(?:U\+|0x)[0-9a-fA-F]+$/.test(searchQ)) targetCode = parseInt(searchQ, 16);
+  else if (/^\d+$/.test(searchQ)) targetCode = parseInt(searchQ, 10);
+  if (targetCode === null || targetCode < 0 || targetCode > 0x10FFFF) {
+    showToast('无效的字符或编码', true);
+    return;
+  }
+  if (font.glyphs[targetCode]) {
+    showToast('该字符已存在', false);
+    selectChar(targetCode);
+    return;
+  }
+  const w = Math.max(1, font.fontWidth || font.lines || 8);
+  const h = font.fontHeight;
+  const pixels = [];
+  for (let y = 0; y < h; y++) pixels.push(new Array(w).fill(0));
+  font.glyphs[targetCode] = { width: w, height: h, pixels };
+  if (font._sharedCodes) font._sharedCodes.delete(targetCode);
+  rebuildCharGroups();
+  selectChar(targetCode);
+  showToast(`已添加 U+${targetCode.toString(16).padStart(4, '0')}`, false);
+});
+
 function addSearchHighlight(code) {
   charGroupList.querySelectorAll('.search-highlight').forEach(el => el.remove());
   const range = getGroupForCode(code);
@@ -898,17 +928,21 @@ function moveGlyphContent(dx, dy) {
   const g = font.glyphs[selectedCode];
   const newPixels = [];
   for (let y = 0; y < g.height; y++) {
-    const newRow = new Array(g.width).fill(0);
+    newPixels.push(new Array(g.width).fill(0));
+  }
+  for (let y = 0; y < g.height; y++) {
     for (let x = 0; x < g.width; x++) {
       if (g.pixels[y] && g.pixels[y][x]) {
         const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < g.width && ny >= 0 && ny < g.height) newRow[nx] = 1;
+        if (nx >= 0 && nx < g.width && ny >= 0 && ny < g.height) {
+          newPixels[ny][nx] = 1;
+        }
       }
     }
-    newPixels.push(newRow);
   }
   g.pixels = newPixels;
   renderEditor();
+  renderPreview();
 }
 
 function centerGlyphContent() {
@@ -937,6 +971,7 @@ function centerGlyphContent() {
   }
   g.pixels = newPixels;
   renderEditor();
+  renderPreview();
 }
 
 // ==================== Preview ====================
@@ -1236,8 +1271,9 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128) {
 function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
   if (!font || !font.glyphs[code]) return false;
   detachGlyph(code);
-  const maxW = Math.min(15, font.lines || 15);
-  const maxH = Math.min(17, font.fontHeight || 17);
+  const fs = getRenderFontSize();
+  const maxW = fs;
+  const maxH = fs;
   const ch = String.fromCodePoint(code);
   const result = renderSystemFontChar(ch, fontFamily, maxW, maxH, threshold);
   if (!result) return false;
@@ -1389,8 +1425,9 @@ function openAddMissingModal(range) {
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
   addBtn.addEventListener('click', () => {
-    const maxW = Math.min(15, font.lines || 15);
-    const maxH = Math.min(17, font.fontHeight || 17);
+    const fs = getRenderFontSize();
+    const maxW = fs;
+    const maxH = fs;
     const threshold = parseInt($('conv-threshold').value) || 128;
     let added = 0;
     for (const code of selectedSet) {
@@ -1874,6 +1911,17 @@ $('refresh-char-list').addEventListener('click', () => {
   showToast('列表已刷新');
 });
 
+// User guide
+$('user-guide-btn').addEventListener('click', () => {
+  $('user-guide-overlay').classList.add('open');
+});
+$('user-guide-close').addEventListener('click', () => {
+  $('user-guide-overlay').classList.remove('open');
+});
+$('user-guide-overlay').addEventListener('click', (e) => {
+  if (e.target === $('user-guide-overlay')) $('user-guide-overlay').classList.remove('open');
+});
+
 // Right panel drag-drop for custom fonts
 const rightPanel = $('right-panel');
 const rightDropHint = $('right-drop-hint');
@@ -1938,8 +1986,9 @@ function renderConvPreview() {
   section.style.display = 'block';
 
   const g = font.glyphs[selectedCode];
-  const maxW = Math.min(15, font.lines || 15);
-  const maxH = Math.min(17, font.fontHeight || 17);
+  const fs = getRenderFontSize();
+  const maxW = fs;
+  const maxH = fs;
   const ch = String.fromCodePoint(selectedCode);
   const threshold = parseInt($('conv-threshold').value) || 128;
   const converted = renderSystemFontChar(ch, family, maxW, maxH, threshold);
@@ -1995,6 +2044,14 @@ function renderConvPreview() {
 
 $('conv-threshold').addEventListener('input', () => {
   $('conv-threshold-val').textContent = $('conv-threshold').value;
+  renderConvPreview();
+});
+
+function getRenderFontSize() {
+  return parseInt($('conv-font-size').value) || 15;
+}
+$('conv-font-size').addEventListener('input', () => {
+  $('conv-font-size-val').textContent = $('conv-font-size').value;
   renderConvPreview();
 });
 

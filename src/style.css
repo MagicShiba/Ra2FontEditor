@@ -24,10 +24,10 @@ h3 { font-size: 12px; margin: 4px 0 2px; flex-shrink: 0; }
 }
 
 /* Scrollbar */
-.panel::-webkit-scrollbar { width: 4px; }
-.panel::-webkit-scrollbar-track { background: transparent; }
-.panel::-webkit-scrollbar-thumb { background: #2a2a3c; border-radius: 2px; }
-.panel::-webkit-scrollbar-thumb:hover { background: #3a3a50; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a3c; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a50; }
 
 /* Dropzone */
 #dropzone {
@@ -200,6 +200,10 @@ button.primary:hover { background: #b4d0fb; }
 cursor: pointer;
 }
 #preview-popup-btn:hover { background: #313244; }
+
+#user-guide-btn { cursor: pointer; }
+#user-guide-btn:hover { background: #313244; }
+#user-guide-body { white-space: pre-wrap !important; word-wrap: break-word; }
 
 #fg-preset {
   padding: 1px 2px;border: 1px solid #45475a; border-radius: 3px;
