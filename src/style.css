@@ -19,17 +19,30 @@ h3 { font-size: 12px; margin: 4px 0 2px; flex-shrink: 0; }
 }
 .panel {
   background: #181825; border: 1px solid #313244; border-radius: 6px;
-  padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+  padding: 5px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
   scrollbar-gutter: stable;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a3c; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a50; }
+/* 修改滚动条宽度（同时影响垂直和横向）为 6 像素 */
+::-webkit-scrollbar {
+  width: 6px;
+  height:6px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #4a4a4a;
+  border-radius: 4px; /* 让滑块看起来更圆润 */
+}
 
-/* Dropzone */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #666666;
+}
+
+.panel.left-panel::-webkit-scrollbar { width: 2px; }
+
+
 #dropzone {
   border: 2px dashed #585b70; border-radius: 6px; padding: 16px;
   text-align: center; cursor: pointer; font-size: 13px; background: #11111b;
@@ -163,8 +176,30 @@ button.primary:hover { background: #b4d0fb; }
   display: flex; justify-content: center; align-items: center;
   flex: 1; min-height: 100px; overflow: auto;
   background: #11111b; border-radius: 4px; border: 1px solid #313244;
+  position: relative;
 }
+#editor-container.show-ruler {
+  padding: 18px 0 0 18px;
+}
+#editor-container:not(.show-ruler) .ruler-el { display: none; }
 #editor-canvas { image-rendering: pixelated; cursor: crosshair; }
+#ruler-corner {
+  position: absolute; top: 0; left: 0;
+  width: 18px; height: 18px; background: #11111b;
+  z-index: 1; pointer-events: none;
+}
+#ruler-top {
+  position: absolute; top: 0; left: 18px; right: 0;
+  height: 18px; z-index: 1; cursor: pointer;
+}
+#ruler-left {
+  position: absolute; top: 18px; left: 0; bottom: 0;
+  width: 18px; z-index: 1; cursor: pointer;
+}
+#guide-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2; pointer-events: none;
+}
 
 /* Toolbar */
 .toolbar {
@@ -186,15 +221,22 @@ button.primary:hover { background: #b4d0fb; }
   display: flex; gap: 8px; align-items: stretch; margin-top: 4px;
 }
 #text-input {
-  flex: 1; min-width: 0; padding: 4px 6px; font-size: 14px; border: 1px solid #45475a;
+  flex: 0 0 40%; padding: 4px 6px; font-size: 14px; border: 1px solid #45475a;
   border-radius: 4px; background: #11111b; color: #cdd6f4; outline: none; font-family: monospace;
   resize: vertical; min-height: 32px;
 }
 #text-input:focus { border-color: #89b4fa; }
+.preview-divider {
+  width: 4px; cursor: col-resize; flex-shrink: 0;
+  background: #313244; border-radius: 2px; transition: background .15s;
+}
+.preview-divider:hover,
+.preview-divider.active { background: #89b4fa; }
 .preview-canvas-wrap {
   flex: 1; min-width: 0; overflow: auto;
   background: #11111b; border-radius: 4px; border: 1px solid #313244;
 }
+.preview-body { position: relative; }
 #preview-canvas { image-rendering: pixelated; display: block; }
 #preview-popup-btn {
 cursor: pointer;
@@ -203,7 +245,7 @@ cursor: pointer;
 
 #user-guide-btn { cursor: pointer; }
 #user-guide-btn:hover { background: #313244; }
-#user-guide-body { white-space: pre-wrap !important; word-wrap: break-word; }
+#user-guide-body {display: unset; white-space: pre-wrap !important; word-wrap: break-word; }
 
 #fg-preset {
   padding: 1px 2px;border: 1px solid #45475a; border-radius: 3px;
@@ -264,9 +306,6 @@ cursor: pointer;
   background: #1e1e2e; border: 1px solid #45475a; border-radius: 4px; margin-top: 2px;
 }
 .font-picker-list.open { display: block; }
-.font-picker-list::-webkit-scrollbar { width: 5px; }
-.font-picker-list::-webkit-scrollbar-track { background: transparent; }
-.font-picker-list::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
 .font-picker-item {
   padding: 4px 8px; font-size: 12px; color: #cdd6f4; cursor: pointer;
 }
@@ -307,6 +346,15 @@ cursor: pointer;
 .modal-char-item .char-preview { font-size: 22px;}
 .modal-char-item .char-code { color: #6c7086; font-family: monospace; font-size: 11px; }
 .modal-char-item .char-name { display: none; }
+
+/* Conv slider grid */
+.conv-slider-grid {
+  display: grid; grid-template-columns:auto 1fr auto; gap: 4px 6px; margin-top: 2px; align-items: center;
+}
+.conv-slider-grid span {
+  font-size: 12px;
+}
+.conv-slider-grid input[type=range] { width: 100%; margin: 0; }
 
 /* === Conversion Preview === */
 #conv-preview-section { margin-top: 4px; }

@@ -46,6 +46,11 @@ let bgColorVal = '#030303';
 let isDrawing = false;
 let groupCanvasCache = new Map();
 let searchHighlightCode = null;
+let showRuler = true;
+let guides = [];
+let guidePreview = null;
+let rulerDragging = null;
+
 
 // ==================== DOM Refs ====================
 const $ = id => document.getElementById(id);
@@ -296,7 +301,14 @@ function parseFont(data) {
 // ==================== Left Panel: Character Groups ====================
 function buildCharGroups() {
   charGroupList.innerHTML = '';
-  if (!font) return;
+  const searchRow = document.querySelector('.search-row');
+  if (!font) {
+    charGroupList.style.display = 'none';
+    if (searchRow) searchRow.style.display = 'none';
+    return;
+  }
+  charGroupList.style.display = 'flex';
+  if (searchRow) searchRow.style.display = 'flex';
   let anyVisible = false;
 
   for (const range of UNICODE_RANGES) {
@@ -481,8 +493,7 @@ function renderGroup(range, codes) {
       for (const h of hitMap) {
         if (x2 > h.bx && x1 < h.bx + h.w && y2 > h.by && y1 < h.by + h.h) {
           if (e.ctrlKey || e.metaKey) {
-            if (selectedCodes.has(h.code)) selectedCodes.delete(h.code);
-            else selectedCodes.add(h.code);
+            selectedCodes.delete(h.code);
           } else {
             selectedCodes.add(h.code);
           }
@@ -722,9 +733,31 @@ function detachGlyph(code) {
   font._sharedCodes.delete(code);
 }
 
+function shouldSeparate() {
+  const el = $('separate-shared');
+  return el && el.checked;
+}
+
+function prepareGlyphEdit(code) {
+  if (shouldSeparate()) detachGlyph(code);
+}
+
+function getBatchEditCodes() {
+  const codes = getSelectedGlyphCodes();
+  if (shouldSeparate()) return codes;
+  if (!font._sharedCodes) return codes;
+  return codes.filter(c => !font._sharedCodes.has(c));
+}
+
+function getBatchEditCodesFromAll(allCodes) {
+  if (shouldSeparate()) return allCodes;
+  if (!font._sharedCodes) return allCodes;
+  return allCodes.filter(c => !font._sharedCodes.has(c));
+}
+
 function selectChar(code) {
   if (!font || !font.glyphs[code]) return;
-  detachGlyph(code);
+  prepareGlyphEdit(code);
   removeSelectionHighlight();
   if (code === selectedCode) {
     selectedCode = null;
@@ -800,12 +833,15 @@ function updateEditorAndRightPanel() {
 function updateGlyphInfo() {
   const charPreview = $('glyph-char-preview');
   const charDisplay = $('glyph-char-display');
+  const convBtns = $('sys-convert-btns');
   if (!font || !selectedCode || !font.glyphs[selectedCode]) {
     glyphInfo.textContent = '请选择一个字符';
     glyphWidthInput.value = '';
     if (charPreview) charPreview.style.display = 'none';
+    if (convBtns) convBtns.style.display = 'none';
     return;
   }
+  if (convBtns) convBtns.style.display = 'flex';
   const g = font.glyphs[selectedCode];
   glyphInfo.textContent = `U+${selectedCode.toString(16).padStart(4, '0')} 宽度=${g.width} 高度=${g.height}`;
   glyphWidthInput.value = g.width;
@@ -831,6 +867,152 @@ function updateBatchInfo() {
 }
 
 // ==================== Editor ====================
+function renderRulers() {
+  const zoom = parseInt(editorZoomSlider.value);
+  const topCanvas = $('ruler-top');
+  const leftCanvas = $('ruler-left');
+  const container = $('editor-container');
+  const rulerSize = 18;
+
+  if (!showRuler || !font || !selectedCode || !font.glyphs[selectedCode]) {
+    topCanvas.width = 0; topCanvas.height = 0;
+    leftCanvas.width = 0; leftCanvas.height = 0;
+    return;
+  }
+
+  const g = font.glyphs[selectedCode];
+  const w = g.width;
+  const h = g.height;
+
+  // Canvas position relative to container
+  const contRect = container.getBoundingClientRect();
+  const edRect = editorCanvas.getBoundingClientRect();
+  const canvasLeft = edRect.left - contRect.left;
+  const canvasTop = edRect.top - contRect.top;
+
+  // Top ruler (spans container width minus corner)
+  const contW = container.clientWidth;
+  const contH = container.clientHeight;
+  topCanvas.width = Math.max(1, contW - rulerSize);
+  topCanvas.height = rulerSize;
+  const tctx = topCanvas.getContext('2d');
+  tctx.fillStyle = '#1e1e2e';
+  tctx.fillRect(0, 0, topCanvas.width, topCanvas.height);
+  tctx.strokeStyle = '#a6adc8';
+  tctx.fillStyle = '#cdd6f4';
+  tctx.font = '11px monospace';
+  tctx.textAlign = 'center';
+  tctx.textBaseline = 'top';
+  for (let x = 1; x <= w; x++) {
+    const px = canvasLeft + x * zoom - rulerSize;
+    if (px < 0) continue;
+    if (x % 5 === 0) {
+      tctx.lineWidth = 2;
+      tctx.beginPath();
+      tctx.moveTo(px + 0.5, rulerSize);
+      tctx.lineTo(px + 0.5, rulerSize - 9);
+      tctx.stroke();
+      tctx.fillText(String(x), px, 1);
+    } else {
+      tctx.lineWidth = 1;
+      tctx.beginPath();
+      tctx.moveTo(px + 0.5, rulerSize);
+      tctx.lineTo(px + 0.5, rulerSize - 5);
+      tctx.stroke();
+    }
+  }
+
+  // Left ruler (spans container height minus corner)
+  leftCanvas.width = rulerSize;
+  leftCanvas.height = Math.max(1, contH - rulerSize);
+  const lctx = leftCanvas.getContext('2d');
+  lctx.fillStyle = '#1e1e2e';
+  lctx.fillRect(0, 0, leftCanvas.width, leftCanvas.height);
+  lctx.strokeStyle = '#a6adc8';
+  lctx.fillStyle = '#cdd6f4';
+  lctx.font = '11px monospace';
+  lctx.textAlign = 'right';
+  lctx.textBaseline = 'middle';
+  for (let y = 1; y <= h; y++) {
+    const py = canvasTop + y * zoom - rulerSize;
+    if (py < 0) continue;
+    if (y % 5 === 0) {
+      lctx.lineWidth = 2;
+      lctx.beginPath();
+      lctx.moveTo(rulerSize, py + 0.5);
+      lctx.lineTo(rulerSize - 9, py + 0.5);
+      lctx.stroke();
+      lctx.fillText(String(y), rulerSize - 4, py);
+    } else {
+      lctx.lineWidth = 1;
+      lctx.beginPath();
+      lctx.moveTo(rulerSize, py + 0.5);
+      lctx.lineTo(rulerSize - 5, py + 0.5);
+      lctx.stroke();
+    }
+  }
+}
+
+function renderGuides() {
+  const overlay = $('guide-overlay');
+  const container = $('editor-container');
+  if (!overlay || !container) return;
+  const ctx = overlay.getContext('2d');
+
+  overlay.width = container.clientWidth;
+  overlay.height = container.clientHeight;
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || (guides.length === 0 && !guidePreview)) return;
+
+  const zoom = editorZoom;
+  const g = font.glyphs[selectedCode];
+  const edRect = editorCanvas.getBoundingClientRect();
+  const contRect = container.getBoundingClientRect();
+  const canvasLeft = edRect.left - contRect.left;
+  const canvasTop = edRect.top - contRect.top;
+
+  ctx.lineCap = 'round';
+  for (const guide of guides) {
+    ctx.strokeStyle = 'rgba(137,180,250,0.8)';
+    ctx.lineWidth = 2;
+    if (guide.orientation === 'v') {
+      const x = canvasLeft + guide.offset * zoom;
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, overlay.height);
+      ctx.stroke();
+    } else if (guide.orientation === 'h') {
+      const y = canvasTop + guide.offset * zoom;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(overlay.width, y + 0.5);
+      ctx.stroke();
+    }
+  }
+
+  if (guidePreview) {
+    ctx.strokeStyle = 'rgba(137,180,250,0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    if (guidePreview.orientation === 'v') {
+      const x = canvasLeft + guidePreview.offset * zoom;
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, overlay.height);
+      ctx.stroke();
+    } else {
+      const y = canvasTop + guidePreview.offset * zoom;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(overlay.width, y + 0.5);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  ctx.lineCap = 'butt';
+}
+
 function renderEditor() {
   const zoom = parseInt(editorZoomSlider.value);
   editorZoom = zoom;
@@ -839,6 +1021,8 @@ function renderEditor() {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) {
     editorCanvas.width = 0;
     editorCanvas.height = 0;
+    $('ruler-top').width = 0; $('ruler-top').height = 0;
+    $('ruler-left').width = 0; $('ruler-left').height = 0;
     return;
   }
 
@@ -877,13 +1061,28 @@ function renderEditor() {
     ctx.lineTo(editorCanvas.width, y * zoom);
     ctx.stroke();
   }
+
+  // Rulers
+  renderRulers();
+  renderGuides();
 }
+
+// Re-render rulers on window resize
+window.addEventListener('resize', () => { renderRulers(); renderGuides(); });
 
 // Editor mouse interaction
 let editorDrawing = false;
 let editorErasing = false;
 
 editorCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function getCanvasMouse(e) {
+  const rect = editorCanvas.getBoundingClientRect();
+  return {
+    mx: (e.clientX - rect.left) * (editorCanvas.width / rect.width),
+    my: (e.clientY - rect.top) * (editorCanvas.height / rect.height)
+  };
+}
 
 editorCanvas.addEventListener('mousedown', e => {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
@@ -893,6 +1092,7 @@ editorCanvas.addEventListener('mousedown', e => {
 });
 
 editorCanvas.addEventListener('mousemove', e => {
+  if (rulerDragging) return; // handled at document level
   if (!editorDrawing) {
     if (e.buttons === 1) { editorDrawing = true; editorErasing = false; }
     else if (e.buttons === 2) { editorDrawing = true; editorErasing = true; }
@@ -910,21 +1110,74 @@ function editorSetPixel(e) {
   const g = font.glyphs[selectedCode];
   if (!g) return;
   const zoom = editorZoom;
-  const rect = editorCanvas.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) * (editorCanvas.width / rect.width);
-  const my = (e.clientY - rect.top) * (editorCanvas.height / rect.height);
-  const px = Math.floor(mx / zoom);
-  const py = Math.floor(my / zoom);
+  const pt = getCanvasMouse(e);
+  const px = Math.floor(pt.mx / zoom);
+  const py = Math.floor(pt.my / zoom);
   if (px < 0 || px >= g.width || py < 0 || py >= g.height) return;
 
-  g.pixels[py][px] = editorErasing ? 0 : 1;
+  prepareGlyphEdit(selectedCode);
+  const gg = font.glyphs[selectedCode];
+  gg.pixels[py][px] = editorErasing ? 0 : 1;
   renderEditor();
 }
+
+// ==================== Ruler Drag (Create Guides) ====================
+$('ruler-top').addEventListener('mousedown', e => {
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || e.button !== 0) return;
+  if (!showRuler) return;
+  const g = font.glyphs[selectedCode];
+  const zoom = editorZoom;
+  const editorRect = editorCanvas.getBoundingClientRect();
+  const mx = (e.clientX - editorRect.left) * (editorCanvas.width / editorRect.width);
+  const offset = Math.round(mx / zoom);
+  rulerDragging = { orientation: 'v' };
+  guidePreview = { orientation: 'v', offset };
+  renderEditor();
+  e.preventDefault();
+});
+
+$('ruler-left').addEventListener('mousedown', e => {
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || e.button !== 0) return;
+  if (!showRuler) return;
+  const g = font.glyphs[selectedCode];
+  const zoom = editorZoom;
+  const editorRect = editorCanvas.getBoundingClientRect();
+  const my = (e.clientY - editorRect.top) * (editorCanvas.height / editorRect.height);
+  const offset = Math.round(my / zoom);
+  rulerDragging = { orientation: 'h' };
+  guidePreview = { orientation: 'h', offset };
+  renderEditor();
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', e => {
+  if (!rulerDragging || !font || !selectedCode || !font.glyphs[selectedCode]) return;
+  const g = font.glyphs[selectedCode];
+  const zoom = editorZoom;
+  const editorRect = editorCanvas.getBoundingClientRect();
+  if (rulerDragging.orientation === 'v') {
+    const mx = (e.clientX - editorRect.left) * (editorCanvas.width / editorRect.width);
+    guidePreview.offset = Math.round(mx / zoom);
+  } else {
+    const my = (e.clientY - editorRect.top) * (editorCanvas.height / editorRect.height);
+    guidePreview.offset = Math.round(my / zoom);
+  }
+  renderEditor();
+});
+
+document.addEventListener('mouseup', e => {
+  if (rulerDragging && guidePreview) {
+    guides.push({ orientation: guidePreview.orientation, offset: guidePreview.offset });
+    renderEditor();
+  }
+  rulerDragging = null;
+  guidePreview = null;
+});
 
 // Move controls
 function moveGlyphContent(dx, dy) {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
-  detachGlyph(selectedCode);
+  prepareGlyphEdit(selectedCode);
   const g = font.glyphs[selectedCode];
   const newPixels = [];
   for (let y = 0; y < g.height; y++) {
@@ -947,7 +1200,7 @@ function moveGlyphContent(dx, dy) {
 
 function centerGlyphContent() {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
-  detachGlyph(selectedCode);
+  prepareGlyphEdit(selectedCode);
   const g = font.glyphs[selectedCode];
   let left = g.width, right = 0;
   for (let y = 0; y < g.height; y++) {
@@ -1034,7 +1287,7 @@ function renderPreview() {
 // Apply glyph width
 $('apply-width').addEventListener('click', () => {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
-  detachGlyph(selectedCode);
+  prepareGlyphEdit(selectedCode);
   const newW = parseInt(glyphWidthInput.value);
   if (isNaN(newW) || newW < 1 || newW > 255) return;
   const g = font.glyphs[selectedCode];
@@ -1062,15 +1315,82 @@ $('move-left').addEventListener('click', () => moveGlyphContent(-1, 0));
 $('move-right').addEventListener('click', () => moveGlyphContent(1, 0));
 $('move-center').addEventListener('click', centerGlyphContent);
 
+// ==================== Ruler & Guide Controls ====================
+function updateRulerUI() {
+  const container = $('editor-container');
+  if (container) container.classList.toggle('show-ruler', showRuler);
+}
+
+$('ruler-toggle').addEventListener('change', function() {
+  showRuler = this.checked;
+  updateRulerUI();
+  renderEditor();
+});
+
+// Init ruler visibility from checkbox state
+updateRulerUI();
+
+$('clear-guides').addEventListener('click', () => {
+  if (guides.length === 0) { showToast('没有辅助线', false); return; }
+  guides = [];
+  renderEditor();
+  showToast('已清除所有辅助线', false);
+});
+
+// ==================== Batch Move ====================
+function batchMoveContent(dx, dy) {
+  const codes = getBatchEditCodes();
+  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
+  for (const code of codes) detachGlyph(code);
+  for (const code of codes) {
+    if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
+    const g = font.glyphs[code];
+    const newPixels = [];
+    for (let y = 0; y < g.height; y++) {
+      newPixels.push(new Array(g.width).fill(0));
+    }
+    for (let y = 0; y < g.height; y++) {
+      for (let x = 0; x < g.width; x++) {
+        if (g.pixels[y] && g.pixels[y][x]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < g.width && ny >= 0 && ny < g.height) {
+            newPixels[ny][nx] = 1;
+          }
+        }
+      }
+    }
+    g.pixels = newPixels;
+  }
+  showToast(`已移动 ${codes.length} 个字符`, false);
+  updateEditorAndRightPanel();
+  renderPreview();
+  rebuildCharGroups();
+}
+
+$('batch-move-up').addEventListener('click', () => batchMoveContent(0, -1));
+$('batch-move-down').addEventListener('click', () => batchMoveContent(0, 1));
+
+// ==================== Separate Shared Toggle ====================
+$('separate-shared').addEventListener('change', function() {
+  const label = this.closest('label');
+  if (label) {
+    label.title = this.checked
+      ? '开启：分离数据，单个/批量操作均先分配新数据空间再修改'
+      : '关闭：跳过共享字符，批量操作不修改共用数据的字符';
+  }
+});
+
 // ==================== Batch Operations ====================
 function getSelectedGlyphCodes() {
   return [...selectedCodes].filter(code => font.glyphs[code]);
 }
 
 function batchSetWidth(newWidth) {
-  const codes = getSelectedGlyphCodes();
+  const codes = getBatchEditCodes();
+  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
+    if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
     const g = font.glyphs[code];
     let contentW = 0;
     for (let y = 0; y < g.height; y++) {
@@ -1098,9 +1418,11 @@ function batchSetWidth(newWidth) {
 }
 
 function batchCenter() {
-  const codes = getSelectedGlyphCodes();
+  const codes = getBatchEditCodes();
+  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
+    if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
     const g = font.glyphs[code];
     let left = g.width, right = 0;
     for (let y = 0; y < g.height; y++) {
@@ -1131,9 +1453,11 @@ function batchCenter() {
 }
 
 function batchClearAll() {
-  const codes = getSelectedGlyphCodes();
+  const codes = getBatchEditCodes();
+  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
+    if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
     const g = font.glyphs[code];
     for (let y = 0; y < g.height; y++)
       for (let x = 0; x < g.width; x++)
@@ -1210,10 +1534,13 @@ function applyShadowToPixels(pixels, w, h) {
   return out;
 }
 
-function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128) {
+function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, vertOffset = 0) {
+  const extra = Math.abs(vertOffset);
+  const addTop = vertOffset < 0 ? extra : 0;
+  const cH = maxH + extra;
   const canvas = document.createElement('canvas');
   canvas.width = maxW;
-  canvas.height = maxH;
+  canvas.height = cH;
   const ctx = canvas.getContext('2d');
 
   let fontSize = maxH;
@@ -1225,15 +1552,15 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128) {
     metrics = ctx.measureText(char);
   }
 
-  ctx.clearRect(0, 0, maxW, maxH);
+  ctx.clearRect(0, 0, maxW, cH);
   ctx.fillStyle = '#fff';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
-  ctx.fillText(char, maxW / 2, maxH / 2);
+  ctx.fillText(char, maxW / 2, maxH / 2 + addTop);
 
-  const imageData = ctx.getImageData(0, 0, maxW, maxH);
+  const imageData = ctx.getImageData(0, 0, maxW, cH);
   const pixels = [];
-  for (let y = 0; y < maxH; y++) {
+  for (let y = 0; y < cH; y++) {
     const row = [];
     for (let x = 0; x < maxW; x++) {
       row.push(imageData.data[(y * maxW + x) * 4 + 3] > threshold ? 1 : 0);
@@ -1242,25 +1569,23 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128) {
   }
 
   // Find content bounds
-  let left = maxW, right = 0, top = maxH, bottom = 0;
-  for (let y = 0; y < maxH; y++)
+  let left = maxW, right = 0, top = cH, bottom = 0;
+  for (let y = 0; y < cH; y++)
     for (let x = 0; x < maxW; x++)
       if (pixels[y][x]) { left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y); }
 
   if (left > right) return null; // empty
 
-  // For height, use font.fontHeight but ensure it fits
   const outH = Math.min(font.fontHeight, maxH);
   const outW = Math.min(right - left + 1, maxW);
   const trimmed = [];
-  // Center vertically within fontHeight
-  const vy = Math.max(0, Math.floor((outH - (bottom - top + 1)) / 2) - top);
+  const vy = Math.max(0, Math.floor((outH - (bottom - top + 1)) / 2) - top + vertOffset);
   for (let y = 0; y < outH; y++) {
     const row = [];
     for (let x = 0; x < outW; x++) {
       const sx = left + x;
       const sy = y - vy;
-      row.push(sy >= 0 && sy < maxH && sx < maxW && pixels[sy][sx] ? 1 : 0);
+      row.push(sy >= 0 && sy < cH && sx < maxW && pixels[sy][sx] ? 1 : 0);
     }
     trimmed.push(row);
   }
@@ -1270,12 +1595,13 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128) {
 
 function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
   if (!font || !font.glyphs[code]) return false;
-  detachGlyph(code);
+  prepareGlyphEdit(code);
   const fs = getRenderFontSize();
   const maxW = fs;
   const maxH = fs;
   const ch = String.fromCodePoint(code);
-  const result = renderSystemFontChar(ch, fontFamily, maxW, maxH, threshold);
+  const vertOffset = getVertOffset();
+  const result = renderSystemFontChar(ch, fontFamily, maxW, maxH, threshold, vertOffset);
   if (!result) return false;
   const g = font.glyphs[code];
   g.width = result.width;
@@ -1299,9 +1625,11 @@ function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
 $('sys-font-convert').addEventListener('click', () => {
   const family = sysFontFamily.value.trim();
   if (!family) { showToast('请输入系统字体名称', true); return; }
-  const codes = getSelectedGlyphCodes();
-  if (codes.length === 0 && selectedCode) codes.push(selectedCode);
+  let codes = getSelectedGlyphCodes();
+  if (codes.length === 0 && selectedCode) codes = [selectedCode];
   if (codes.length === 0) { showToast('请先选择字符', true); return; }
+  if (!shouldSeparate() && font._sharedCodes && codes.length > 1) codes = codes.filter(c => !font._sharedCodes.has(c));
+  if (codes.length === 0) { showToast('没有可操作的字符（共享字符已跳过）', true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
   let count = 0;
   for (const code of codes) {
@@ -1317,7 +1645,9 @@ $('sys-font-convert-all').addEventListener('click', () => {
   const family = sysFontFamily.value.trim();
   if (!family) { showToast('请输入系统字体名称', true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
-  const codes = Object.keys(font.glyphs).map(Number);
+  const allCodes = Object.keys(font.glyphs).map(Number);
+  const codes = getBatchEditCodesFromAll(allCodes);
+  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
   let count = 0;
   for (const code of codes) {
     if (convertGlyphFromSystemFont(code, family, threshold)) count++;
@@ -1433,7 +1763,7 @@ function openAddMissingModal(range) {
     for (const code of selectedSet) {
       if (font.glyphs[code]) continue;
       const ch = String.fromCodePoint(code);
-      const result = renderSystemFontChar(ch, family, maxW, maxH, threshold);
+      const result = renderSystemFontChar(ch, family, maxW, maxH, threshold, getVertOffset());
       if (!result) continue;
       let pixels = result.pixels;
       if ($('shadow-toggle').checked) {
@@ -1581,18 +1911,42 @@ function downloadBuffer(buf, filename) {
 
 $('save-btn').addEventListener('click', saveFont);
 
-// Preview resize document-level handlers
+// Preview divider (horizontal split)
+const previewDivider = $('preview-divider');
+let previewDividing = false;
+if (previewDivider) {
+  previewDivider.addEventListener('mousedown', e => {
+    previewDividing = true;
+    previewDivider.classList.add('active');
+    e.preventDefault();
+  });
+}
+
 document.addEventListener('mousemove', e => {
+  if (previewDividing) {
+    const body = document.querySelector('.preview-body');
+    const rect = body.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    textInput.style.flex = `0 0 ${Math.max(20, Math.min(80, pct))}%`;
+    return;
+  }
   if (!previewResizing) return;
   const panelRect = $('center-panel').getBoundingClientRect();
   const newHeight = panelRect.bottom - e.clientY;
   previewSection.style.height = Math.max(80, newHeight) + 'px';
+  renderRulers();
+  renderGuides();
 });
 
 document.addEventListener('mouseup', () => {
   if (previewResizing) {
     previewResizing = false;
     if (previewResizeHandle) previewResizeHandle.classList.remove('active');
+    renderEditor();
+  }
+  if (previewDividing) {
+    previewDividing = false;
+    if (previewDivider) previewDivider.classList.remove('active');
   }
 });
 
@@ -1609,7 +1963,7 @@ $('apply-font-size').addEventListener('click', () => {
     // Resize all glyphs
     const oldH = font.fontHeight;
     for (const code in font.glyphs) {
-      detachGlyph(code);
+      prepareGlyphEdit(code);
       const g = font.glyphs[code];
       if (newH > oldH) {
         // Add rows at bottom
@@ -1893,7 +2247,7 @@ $('clear-editor').addEventListener('click', () => {
     showToast('请先选择字符', true);
     return;
   }
-  detachGlyph(selectedCode);
+  prepareGlyphEdit(selectedCode);
   const g = font.glyphs[selectedCode];
   for (let y = 0; y < g.height; y++)
     for (let x = 0; x < g.width; x++)
@@ -1991,7 +2345,8 @@ function renderConvPreview() {
   const maxH = fs;
   const ch = String.fromCodePoint(selectedCode);
   const threshold = parseInt($('conv-threshold').value) || 128;
-  const converted = renderSystemFontChar(ch, family, maxW, maxH, threshold);
+  const vertOffset = getVertOffset();
+  const converted = renderSystemFontChar(ch, family, maxW, maxH, threshold, vertOffset);
 
   const scale = 4;
   // Before canvas (original glyph)
@@ -2050,8 +2405,15 @@ $('conv-threshold').addEventListener('input', () => {
 function getRenderFontSize() {
   return parseInt($('conv-font-size').value) || 15;
 }
+function getVertOffset() {
+  return parseInt($('conv-vert-offset').value) || 0;
+}
 $('conv-font-size').addEventListener('input', () => {
   $('conv-font-size-val').textContent = $('conv-font-size').value;
+  renderConvPreview();
+});
+$('conv-vert-offset').addEventListener('input', () => {
+  $('conv-vert-offset-val').textContent = $('conv-vert-offset').value;
   renderConvPreview();
 });
 

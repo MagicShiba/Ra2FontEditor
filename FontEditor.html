@@ -36,7 +36,7 @@
     </div>
 
     <h2>字符列表</h2>
-    <div class="search-row">
+    <div class="search-row" style="display:none">
       <select id="nav-dropdown" style="display:none">
         <option value="">— 快速定位 —</option>
       </select>
@@ -47,7 +47,7 @@
       已选 <span id="batch-count">0</span> 个字符
     </div>
 
-    <div id="char-group-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;min-height:0"></div>
+    <div id="char-group-list" style="flex:1;overflow-y:auto;display:none;flex-direction:column;gap:3px;min-height:0"></div>
   </div>
 
   <!-- ===== CENTER PANEL ===== -->
@@ -56,13 +56,19 @@
       <h2>编辑器</h2>
       <div class="toolbar">
         <label>缩放 <input type="range" id="editor-zoom" min="2" max="32" step="1" value="10"></label>
-        <button id="copy-to-clipboard" title="复制原始分辨率图像到剪切板">复制图像</button>
+        <label style="font-size:11px;color:#a6adc8;display:flex;align-items:center;gap:2px" title="显示/隐藏标尺,拖动获得辅助线"><input type="checkbox" id="ruler-toggle" checked>标尺</label>
+        <button id="clear-guides" title="清除所有辅助线">清辅助线</button>
         <button id="clear-editor" title="清空画布">清空画布</button>
+        <button id="copy-to-clipboard" title="复制原始分辨率图像到剪切板">复制图像</button>
         <button id="refresh-char-list" title="刷新字符列表">刷新列表</button>
         <button id="user-guide-btn" title="查看使用说明">使用说明</button>
       </div>
     </div>
     <div id="editor-container">
+      <div id="ruler-corner" class="ruler-el"></div>
+      <canvas id="ruler-top" class="ruler-el"></canvas>
+      <canvas id="ruler-left" class="ruler-el"></canvas>
+      <canvas id="guide-overlay"></canvas>
       <canvas id="editor-canvas"></canvas>
     </div>
 
@@ -90,15 +96,19 @@
         <button id="preview-popup-btn" title="放大高分辨率查看">查看</button>
       </div>
       <div class="preview-area">
-        <div class="preview-body">
-          <textarea id="text-input" rows="2">Hello World! RA2 Font Edit！
-红警2字体编辑器，预览文本。
-一键转换你喜欢的字体！
-The quick brown fox jumps over a lazy dog.</textarea>
-          <div class="preview-canvas-wrap">
-            <canvas id="preview-canvas"></canvas>
-          </div>
+      <div class="preview-body">
+        <textarea id="text-input" rows="2">Hello World! RA2 Font Editor!
+红警2字体编辑器，预览文本。一键转换你喜欢的字体！
+the quick brown fox jumps over a lazy dog,
+THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
+1+1-1*1@$1^&*()_+-=<>'12:34'?/|\
+心灵终结·心靈終結 Ω 3.3.7 s∞n™
+[伴朋买房到天南路]{观客欢聚庆新宅}【尝食软粽脆笋】 </textarea>
+        <div id="preview-divider" class="preview-divider"></div>
+        <div class="preview-canvas-wrap">
+          <canvas id="preview-canvas"></canvas>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -133,12 +143,16 @@ The quick brown fox jumps over a lazy dog.</textarea>
       <h3>批量操作</h3>
       <div id="batch-info" style="font-size:11px;color:#6c7086;">在左侧勾选范围进行批量操作</div>
       <div class="field-row" style="margin-top:4px">
-        <label>宽度 <input type="number" id="batch-width-input" min="1" max="255" style="width:60px"></label>
+        <label>宽度 <input type="number" id="batch-width-input" min="1" value="17" max="255" style="width:60px"></label>
         <button id="batch-set-width">设置</button>
       </div>
       <div class="field-row" style="margin-top:4px">
         <button id="batch-center">居中</button>
         <button id="batch-clear-all">清除全部</button>
+      </div>
+      <div class="field-row" style="margin-top:4px">
+        <button id="batch-move-up" title="向上移动1像素"> ↑ </button>
+        <button id="batch-move-down" title="向下移动1像素"> ↓ </button>
       </div>
     </div>
 
@@ -167,21 +181,23 @@ The quick brown fox jumps over a lazy dog.</textarea>
             <canvas id="conv-preview-after"></canvas>
           </div>
         </div>
-        <label style="font-size:11px;color:#a6adc8;display:flex;align-items:center;gap:4px;margin-top:2px">阈值<input type="range" id="conv-threshold" min="0" max="255" value="128" style="width:75%">
-          <span id="conv-threshold-val" style="font-size:10px;color:#6c7086;min-width:20px">128</span>
-        </label>
-        <div class="field-row" style="margin-top:2px">
-          <label class="sc-tc-toggle" title="仅保留右下+右侧1px阴影,剔除原文字,营造3D镂空效果">
+        <div class="conv-slider-grid">
+          <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:10px;color:#6c7086;min-width:20px">128</span>
+          <span>字号</span><input type="range" id="conv-font-size" min="10" max="20" value="15"><span id="conv-font-size-val" style="font-size:10px;color:#6c7086;min-width:16px">15</span>
+          <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:10px;color:#6c7086;min-width:16px">0</span>
+        </div>
+        <div class="field-row" style="margin-top:4px">
+          <label class="sc-tc-toggle" title="开启：分离数据，单个/批量操作均先分配新数据空间再修改">
+            <input type="checkbox" id="separate-shared" checked>分离共享字符
+          </label>
+          <label class="sc-tc-toggle" title="图一乐，没啥用。&#10;仅保留右下+右侧1px阴影,剔除原文字,营造3D镂空效果">
             <input type="checkbox" id="shadow-toggle">3D阴影
           </label>
         </div>
-        <label style="font-size:11px;color:#a6adc8;display:flex;align-items:center;gap:4px;margin-top:2px">字号 <input type="range" id="conv-font-size" min="10" max="20" value="15" style="width:60%">
-          <span id="conv-font-size-val" style="font-size:10px;color:#6c7086;min-width:16px">15</span>
-        </label>
       </div>
-      <div class="field-row" style="margin-top:4px">
-        <button id="sys-font-convert">转换选中</button>
-        <button id="sys-font-convert-all">转换全部</button>
+      <div class="field-row" id="sys-convert-btns" style="margin-top:4px;display:none">
+        <button id="sys-font-convert" class="primary">转换选中</button>
+        <button id="sys-font-convert-all" class="primary">转换全部</button>
       </div>
     </div>
   </div>
@@ -213,8 +229,10 @@ The quick brown fox jumps over a lazy dog.</textarea>
 - 鼠标左键：绘制像素
 - 鼠标右键：擦除像素
 
-工具地址:https://github.com/MagicShiba/Ra2FontEditor
-
+工具github地址：
+<a href="https://github.com/MagicShiba/Ra2FontEditor" style="color: #ff9800;"> https://github.com/MagicShiba/Ra2FontEditor </a>
+B站:
+<a href="https://space.bilibili.com/335956233/dynamic" style="color: #ff9800;"> 时间纪元 (时之纪元) </a>
   </div>
   </div>
 </div>
