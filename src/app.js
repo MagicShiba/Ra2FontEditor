@@ -2588,10 +2588,10 @@ function getFontStyle() {
   return $('font-style').value || 'normal';
 }
 function getFineX() {
-  return (parseInt($('conv-fine-x').value) || 0) / 10;
+  return parseFloat($('conv-fine-x').value) || 0;
 }
 function getFineY() {
-  return (parseInt($('conv-fine-y').value) || 0) / 10;
+  return parseFloat($('conv-fine-y').value) || 0;
 }
 $('conv-font-size').addEventListener('input', () => {
   $('conv-font-size-val').textContent = $('conv-font-size').value;

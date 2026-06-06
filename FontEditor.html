@@ -188,7 +188,7 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
             <canvas id="conv-preview-before"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span style="font-size:10px;color:#6c7086">系统字体</span>
+            <span style="font-size:11px">系统字体</span>
             <canvas id="conv-preview-sysfont"></canvas>
           </div>
           <div class="conv-preview-item">
@@ -201,11 +201,11 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
           </div>
         </div>
         <div class="conv-slider-grid">
-          <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:10px;color:#6c7086;min-width:20px">128</span>
-          <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" value="15"><span id="conv-font-size-val" style="font-size:10px;color:#6c7086;min-width:16px">15</span>
-          <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:10px;color:#6c7086;min-width:16px">0</span>
-          <span>微调X</span><input type="range" id="conv-fine-x" min="-10" max="10" value="0" step="1"><span id="conv-fine-x-val" style="font-size:10px;color:#6c7086;min-width:24px">0.0</span>
-          <span>微调Y</span><input type="range" id="conv-fine-y" min="-10" max="10" value="0" step="1"><span id="conv-fine-y-val" style="font-size:10px;color:#6c7086;min-width:24px">0.0</span>
+          <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:11px;min-width:26px">128</span>
+          <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" value="15"><span id="conv-font-size-val" style="font-size:11px;min-width:16px">15</span>
+          <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:11px;min-width:16px">0</span>
+<span>微调X</span><input type="range" id="conv-fine-x" min="-1" max="1" value="0" step="0.1" title="微调x轴像素坐标,改进渲染"><span id="conv-fine-x-val" style="font-size:11px;min-width:16px">0.0</span>
+<span>微调Y</span><input type="range" id="conv-fine-y" min="-1" max="1" value="0" step="0.1" title="微调y轴像素坐标,没什么用,目前html渲染如此"><span id="conv-fine-y-val" style="font-size:11px;min-width:16px">0.0</span>
         </div>
         <div class="field-row" style="margin-top:4px">
           <label class="sc-tc-toggle" title="开启：分离数据，单个/批量操作均先分配新数据空间再修改">
