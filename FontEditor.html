@@ -161,15 +161,30 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
     <div class="right-drop-hint" id="right-drop-hint">拖放字体文件到此处<br><span style="font-size:10px;color:#6c7086;">.fnt / 系统字体文件</span></div>
       <div class="field-row font-picker-row">
         <div id="font-picker" class="font-picker">
-          <input type="text" id="sys-font-family" placeholder="选择字体..." readonly>
+          <input type="text" id="sys-font-family" placeholder="选择字体或输入筛选...">
           <span class="picker-arrow">▼</span>
           <div id="font-picker-list" class="font-picker-list"></div>
         </div>
+        <select id="font-style">
+          <option value="normal">常规</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="300">300</option>
+          <option value="400">400</option>
+          <option value="500">500</option>
+          <option value="bold">粗体</option>
+          <option value="600">600</option>
+          <option value="700">700</option>
+          <option value="800">800</option>
+          <option value="900">900</option>
+          <option value="italic">斜体</option>
+          <option value="bold italic">粗斜体</option>
+        </select>
       </div>
       <div id="conv-preview-section" style="display:none">
         <div class="conv-preview-row">
           <div class="conv-preview-item">
-            <span style="font-size:10px;color:#6c7086">原始</span>
+            <span id="conv-label-before" style="font-size:11px">原始</span>
             <canvas id="conv-preview-before"></canvas>
           </div>
           <div class="conv-preview-item">
@@ -177,14 +192,20 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
             <canvas id="conv-preview-sysfont"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span style="font-size:10px;color:#6c7086">转换</span>
+            <span style="font-size:11px">原始像素</span>
+            <canvas id="conv-preview-sysfont-raw"></canvas>
+          </div>
+          <div class="conv-preview-item">
+            <span id="conv-label-after" style="font-size:11px">转换</span>
             <canvas id="conv-preview-after"></canvas>
           </div>
         </div>
         <div class="conv-slider-grid">
           <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:10px;color:#6c7086;min-width:20px">128</span>
-          <span>字号</span><input type="range" id="conv-font-size" min="10" max="20" value="15"><span id="conv-font-size-val" style="font-size:10px;color:#6c7086;min-width:16px">15</span>
+          <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" value="15"><span id="conv-font-size-val" style="font-size:10px;color:#6c7086;min-width:16px">15</span>
           <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:10px;color:#6c7086;min-width:16px">0</span>
+          <span>微调X</span><input type="range" id="conv-fine-x" min="-10" max="10" value="0" step="1"><span id="conv-fine-x-val" style="font-size:10px;color:#6c7086;min-width:24px">0.0</span>
+          <span>微调Y</span><input type="range" id="conv-fine-y" min="-10" max="10" value="0" step="1"><span id="conv-fine-y-val" style="font-size:10px;color:#6c7086;min-width:24px">0.0</span>
         </div>
         <div class="field-row" style="margin-top:4px">
           <label class="sc-tc-toggle" title="开启：分离数据，单个/批量操作均先分配新数据空间再修改">

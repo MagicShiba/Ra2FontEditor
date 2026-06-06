@@ -286,6 +286,9 @@ cursor: pointer;
 
 /* === Font Picker === */
 .font-picker-row { position: relative; }
+#font-style { padding: 4px 6px; font-size: 12px; border: 1px solid #45475a; border-radius: 4px; background: #11111b; color: #cdd6f4; outline: none; cursor: pointer; flex-shrink: 0; }
+#font-style:focus { border-color: #89b4fa; }
+#font-style option { background: #1e1e2e; color: #cdd6f4; }
 .font-picker {
   position: relative; flex: 1; cursor: pointer;
 }
@@ -359,10 +362,10 @@ cursor: pointer;
 /* === Conversion Preview === */
 #conv-preview-section { margin-top: 4px; }
 .conv-preview-row {
-  display: flex; gap: 6px; align-items: flex-start;
+  display: flex; gap: 1px; align-items: flex-start;
 }
 .conv-preview-item {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  display: flex; flex-direction: column; gap: 2px;
 }
 .conv-preview-item canvas {
   image-rendering: pixelated; border: 1px solid #45475a; border-radius: 2px;

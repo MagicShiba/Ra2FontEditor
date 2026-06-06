@@ -1534,29 +1534,31 @@ function applyShadowToPixels(pixels, w, h) {
   return out;
 }
 
-function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, vertOffset = 0) {
-  const extra = Math.abs(vertOffset);
-  const addTop = vertOffset < 0 ? extra : 0;
-  const cH = maxH + extra;
+function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, vertOffset = 0, fontStyle = 'normal', fineX = 0, fineY = 0) {
+  const margin = 8;
+  const cH = maxH + margin * 2;
   const canvas = document.createElement('canvas');
   canvas.width = maxW;
   canvas.height = cH;
   const ctx = canvas.getContext('2d');
 
   let fontSize = maxH;
-  ctx.font = `${fontSize}px "${fontFamily}"`;
+  ctx.font = `${fontStyle} ${fontSize}px "${fontFamily}"`;
   let metrics = ctx.measureText(char);
   while ((metrics.width > maxW - 1 || fontSize > maxH) && fontSize > 4) {
     fontSize--;
-    ctx.font = `${fontSize}px "${fontFamily}"`;
+    ctx.font = `${fontStyle} ${fontSize}px "${fontFamily}"`;
     metrics = ctx.measureText(char);
   }
 
   ctx.clearRect(0, 0, maxW, cH);
   ctx.fillStyle = '#fff';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  ctx.fillText(char, maxW / 2, maxH / 2 + addTop);
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  const tw = Math.ceil(metrics.width);
+  const tx = Math.floor((maxW - tw) / 2);
+  const ty = Math.floor((cH - fontSize) / 2);
+  ctx.fillText(char, tx + fineX, ty + fineY);
 
   const imageData = ctx.getImageData(0, 0, maxW, cH);
   const pixels = [];
@@ -1574,23 +1576,40 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
     for (let x = 0; x < maxW; x++)
       if (pixels[y][x]) { left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y); }
 
-  if (left > right) return null; // empty
+  if (left > right) return null;
 
   const outH = Math.min(font.fontHeight, maxH);
-  const outW = Math.min(right - left + 1, maxW);
-  const trimmed = [];
-  const vy = Math.max(0, Math.floor((outH - (bottom - top + 1)) / 2) - top + vertOffset);
+  const charH = bottom - top + 1;
+  const charW = right - left + 1;
+
+  // Position character directly in output (no vy offset needed)
+  const startY = Math.floor((outH - charH) / 2) + vertOffset;
+  const startX = Math.floor((maxW - charW) / 2);
+
+  const result = [];
   for (let y = 0; y < outH; y++) {
     const row = [];
-    for (let x = 0; x < outW; x++) {
-      const sx = left + x;
-      const sy = y - vy;
-      row.push(sy >= 0 && sy < cH && sx < maxW && pixels[sy][sx] ? 1 : 0);
+    for (let x = 0; x < maxW; x++) {
+      const charY = y - startY;
+      const charX = x - startX;
+      if (charY >= 0 && charY < charH && charX >= 0 && charX < charW) {
+        row.push(pixels[top + charY][left + charX] ? 1 : 0);
+      } else {
+        row.push(0);
+      }
     }
-    trimmed.push(row);
+    result.push(row);
   }
 
-  return { width: outW, pixels: trimmed };
+  // Trim empty columns
+  let resultLeft = maxW, resultRight = 0;
+  for (let y = 0; y < outH; y++)
+    for (let x = 0; x < maxW; x++)
+      if (result[y][x]) { resultLeft = Math.min(resultLeft, x); resultRight = Math.max(resultRight, x); }
+  if (resultLeft > resultRight) return null;
+
+  const trimmed = result.map(row => row.slice(resultLeft, resultRight + 1));
+  return { width: trimmed[0].length, pixels: trimmed };
 }
 
 function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
@@ -1601,7 +1620,10 @@ function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
   const maxH = fs;
   const ch = String.fromCodePoint(code);
   const vertOffset = getVertOffset();
-  const result = renderSystemFontChar(ch, fontFamily, maxW, maxH, threshold, vertOffset);
+  const fontStyle = getFontStyle();
+  const fineX = getFineX();
+  const fineY = getFineY();
+  const result = renderSystemFontChar(ch, fontFamily, maxW, maxH, threshold, vertOffset, fontStyle, fineX, fineY);
   if (!result) return false;
   const g = font.glyphs[code];
   g.width = result.width;
@@ -1763,7 +1785,7 @@ function openAddMissingModal(range) {
     for (const code of selectedSet) {
       if (font.glyphs[code]) continue;
       const ch = String.fromCodePoint(code);
-      const result = renderSystemFontChar(ch, family, maxW, maxH, threshold, getVertOffset());
+      const result = renderSystemFontChar(ch, family, maxW, maxH, threshold, getVertOffset(), getFontStyle());
       if (!result) continue;
       let pixels = result.pixels;
       if ($('shadow-toggle').checked) {
@@ -2139,23 +2161,63 @@ if (fontPicker) {
   });
 }
 
-// Filter font list on input
+// Font picker input — typing filters, programmatic set shows all
 if (sysFontFamily) {
-  sysFontFamily.addEventListener('input', () => {
-    const q = sysFontFamily.value.toLowerCase();
+  sysFontFamily.addEventListener('input', e => {
     const list = $('font-picker-list');
-    list.querySelectorAll('.font-picker-item').forEach(el => {
-      el.style.display = el.dataset.search.includes(q) ? '' : 'none';
-    });
-    if (!fontPickerOpen) {
+    const items = list.querySelectorAll('.font-picker-item');
+    if (e.isTrusted) {
+      // Real user typing — apply filter
+      const q = sysFontFamily.value.toLowerCase();
+      items.forEach(el => {
+        el.style.display = el.dataset.search.includes(q) ? '' : 'none';
+      });
+    } else {
+      // Programmatic set (dropdown / wheel) — show all
+      items.forEach(el => el.style.display = '');
+    }
+    if (e.isTrusted && !fontPickerOpen) {
       list.classList.add('open');
       fontPickerOpen = true;
     }
   });
+
+  // Scroll wheel — filtered results or all fonts
+  sysFontFamily.addEventListener('wheel', e => {
+    e.preventDefault();
+    const list = $('font-picker-list');
+    const hasFilter = sysFontFamily.value.trim().length > 0;
+    let items;
+    if (hasFilter) {
+      items = [...list.querySelectorAll('.font-picker-item')]
+        .filter(el => el.style.display !== 'none');
+      if (items.length === 0) { // no match → fall back to all
+        populateFontPicker();
+        items = [...list.querySelectorAll('.font-picker-item')];
+      }
+    } else {
+      populateFontPicker();
+      items = [...list.querySelectorAll('.font-picker-item')];
+    }
+    if (items.length === 0) return;
+    const cur = sysFontFamily.value;
+    let idx = items.findIndex(el => el.dataset.font === cur);
+    if (e.deltaY < 0) {
+      idx = idx <= 0 ? items.length - 1 : idx - 1;
+    } else {
+      idx = idx < 0 ? 0 : (idx >= items.length - 1 ? 0 : idx + 1);
+    }
+    sysFontFamily.value = items[idx].dataset.font;
+    sysFontFamily.dispatchEvent(new Event('input', { bubbles: true }));
+  }, { passive: false });
 }
 
-// Kick off font enumeration
-enumerateSystemFonts();
+// Kick off font enumeration, default to 微软雅黑
+enumerateSystemFonts().then(() => {
+  if (systemFonts.includes('Microsoft YaHei')) {
+    sysFontFamily.value = 'Microsoft YaHei';
+  }
+});
 
 // ==================== Event Handlers ====================
 dropzone.addEventListener('click', () => fileInput.click());
@@ -2298,6 +2360,7 @@ function handleFontFileDrop(file) {
         if (!systemFonts.includes(fontName)) {
           systemFonts.unshift(fontName);
           sysFontFamily.value = fontName;
+          sysFontFamily.dispatchEvent(new Event('input', { bubbles: true }));
           showToast(`已加载自定义字体: ${file.name}`, false);
         }
       }).catch(() => showToast('字体加载失败', true));
@@ -2346,52 +2409,165 @@ function renderConvPreview() {
   const ch = String.fromCodePoint(selectedCode);
   const threshold = parseInt($('conv-threshold').value) || 128;
   const vertOffset = getVertOffset();
-  const converted = renderSystemFontChar(ch, family, maxW, maxH, threshold, vertOffset);
+  const fontStyle = getFontStyle();
+  const fineX = getFineX();
+  const fineY = getFineY();
+  const converted = renderSystemFontChar(ch, family, maxW, maxH, threshold, vertOffset, fontStyle, fineX, fineY);
+
+  $('conv-label-before').textContent = '原始-' + g.width;
 
   const scale = 4;
+  const pvW = 60;
+  const pvH = 60;
+  const ds = converted ? Math.max(1, Math.min(scale, Math.floor(pvW / Math.max(1, converted.width)), Math.floor(pvH / Math.max(1, font.fontHeight)))) : scale;
+  const aoffX = converted ? Math.floor((pvW - converted.width * ds) / 2) : 0;
+  const aoffY = converted ? Math.floor((pvH - font.fontHeight * ds) / 2) : 0;
   // Before canvas (original glyph)
   const cb = $('conv-preview-before');
-  cb.width = g.width * scale; cb.height = g.height * scale;
+  cb.width = pvW; cb.height = pvH;
   const bctx = cb.getContext('2d');
   bctx.fillStyle = '#1e1e2e'; bctx.fillRect(0, 0, cb.width, cb.height);
   bctx.fillStyle = '#cdd6f4';
+  const boffX = Math.floor((pvW - g.width * scale) / 2);
+  const boffY = Math.floor((pvH - g.height * scale) / 2);
   for (let y = 0; y < g.height; y++)
     for (let x = 0; x < g.width; x++)
-      if (g.pixels[y] && g.pixels[y][x]) bctx.fillRect(x * scale, y * scale, scale, scale);
+      if (g.pixels[y] && g.pixels[y][x]) bctx.fillRect(boffX + x * scale, boffY + y * scale, scale, scale);
 
-  // Middle canvas (system font raw appearance)
+  // Determine font size same as renderSystemFontChar
+  let baseFontSize = maxH;
+  {
+    const mCtx = document.createElement('canvas').getContext('2d');
+    mCtx.font = `${fontStyle} ${baseFontSize}px "${family}"`;
+    let m = mCtx.measureText(ch);
+    while ((m.width > maxW - 1 || baseFontSize > maxH) && baseFontSize > 4) {
+      baseFontSize--;
+      mCtx.font = `${fontStyle} ${baseFontSize}px "${family}"`;
+      m = mCtx.measureText(ch);
+    }
+  }
+
+  // Determine font size for sysfont preview (fixed to default, not affected by slider)
+  let sysBaseFontSize = 15;
+  {
+    const mCtx = document.createElement('canvas').getContext('2d');
+    mCtx.font = `${fontStyle} ${sysBaseFontSize}px "${family}"`;
+    let m = mCtx.measureText(ch);
+    while ((m.width > 14 || sysBaseFontSize > 15) && sysBaseFontSize > 4) {
+      sysBaseFontSize--;
+      mCtx.font = `${fontStyle} ${sysBaseFontSize}px "${family}"`;
+      m = mCtx.measureText(ch);
+    }
+  }
+
+  // Middle canvas (system font raw appearance, large rendering)
   const cs = $('conv-preview-sysfont');
-  cs.width = maxW * scale; cs.height = maxH * scale;
+  cs.width = pvW; cs.height = pvH;
   const sctx = cs.getContext('2d');
   sctx.fillStyle = '#1e1e2e'; sctx.fillRect(0, 0, cs.width, cs.height);
-  let displaySz = maxH * scale;
-  sctx.font = `${displaySz}px "${family}"`;
-  while (sctx.measureText(ch).width > cs.width * 0.95 && displaySz > 4) {
-    displaySz--;
-    sctx.font = `${displaySz}px "${family}"`;
-  }
+  sctx.font = `${fontStyle} ${sysBaseFontSize * scale}px "${family}"`;
   sctx.fillStyle = '#f5c2e7';
-  sctx.textBaseline = 'middle';
-  sctx.textAlign = 'center';
-  sctx.fillText(ch, cs.width / 2, cs.height / 2);
+  sctx.textBaseline = 'top';
+  sctx.textAlign = 'left';
+  const sm = sctx.measureText(ch);
+  const sw = Math.ceil(sm.width);
+  const sx = Math.floor((cs.width - sw) / 2);
+  const sy = Math.floor((cs.height - sysBaseFontSize * scale) / 2);
+  sctx.fillText(ch, sx, sy);
+
+  // Actual-size raw system font preview (same font size as conversion, no binarization)
+  {
+    const cr = $('conv-preview-sysfont-raw');
+    const cH = maxH + 16;
+    const rawCanvas = document.createElement('canvas');
+    rawCanvas.width = maxW;
+    rawCanvas.height = cH;
+    const rawCtx = rawCanvas.getContext('2d');
+    rawCtx.clearRect(0, 0, maxW, cH);
+    rawCtx.font = `${fontStyle} ${baseFontSize}px "${family}"`;
+    rawCtx.fillStyle = '#fff';
+    rawCtx.textBaseline = 'top';
+    rawCtx.textAlign = 'left';
+    const rawM = rawCtx.measureText(ch);
+    const rw = Math.ceil(rawM.width);
+    const rx = Math.floor((maxW - rw) / 2);
+    const ry = Math.floor((cH - baseFontSize) / 2);
+    rawCtx.fillText(ch, rx + fineX, ry + fineY);
+
+    // Find content bounds from raw rendering (same as renderSystemFontChar, no threshold)
+    const rId = rawCtx.getImageData(0, 0, maxW, cH);
+    let rl = maxW, rr = 0, rt = cH, rb = 0;
+    for (let y = 0; y < cH; y++)
+      for (let x = 0; x < maxW; x++)
+        if (rId.data[(y * maxW + x) * 4 + 3] > 0) {
+          if (x < rl) rl = x; if (x > rr) rr = x;
+          if (y < rt) rt = y; if (y > rb) rb = y;
+        }
+
+    cr.width = pvW;
+    cr.height = pvH;
+    const rctx = cr.getContext('2d');
+    rctx.fillStyle = '#1e1e2e';
+    rctx.fillRect(0, 0, cr.width, cr.height);
+
+    if (rl <= rr) {
+      const roh = Math.min(font.fontHeight, maxH);
+      const rch = rb - rt + 1;
+      const rcw = rr - rl + 1;
+      const rsy = Math.floor((roh - rch) / 2) + vertOffset;
+      const rsx = Math.floor((maxW - rcw) / 2);
+      // Build maxW-wide result (same centering as renderSystemFontChar), then trim empty columns
+      const rResult = [];
+      for (let y = 0; y < roh; y++) {
+        const row = [];
+        for (let x = 0; x < maxW; x++) {
+          const srcY = rt + y - rsy;
+          const srcX = rl + x - rsx;
+          if (srcY >= 0 && srcY < cH && srcX >= 0 && srcX < maxW) {
+            row.push(rId.data[(srcY * maxW + srcX) * 4 + 3]);
+          } else {
+            row.push(0);
+          }
+        }
+        rResult.push(row);
+      }
+      let rLeft = maxW, rRight = 0;
+      for (let y = 0; y < roh; y++)
+        for (let x = 0; x < maxW; x++)
+          if (rResult[y][x] > 0) { if (x < rLeft) rLeft = x; if (x > rRight) rRight = x; }
+      if (rLeft <= rRight) {
+        const rtW = rRight - rLeft + 1;
+        for (let y = 0; y < roh; y++)
+          for (let x = 0; x < rtW; x++) {
+            const a = rResult[y][rLeft + x];
+            if (a > 0) {
+              rctx.globalAlpha = a / 255;
+              rctx.fillStyle = '#f5c2e7';
+              rctx.fillRect(aoffX + x * ds, aoffY + y * ds, ds, ds);
+            }
+          }
+        rctx.globalAlpha = 1;
+      }
+    }
+  }
 
   // After canvas (thresholded conversion)
   const ca = $('conv-preview-after');
   if (converted) {
-    const ah = font.fontHeight;
-    ca.width = converted.width * scale; ca.height = ah * scale;
+    $('conv-label-after').textContent = '转换-' + converted.width;
+    ca.width = pvW; ca.height = pvH;
     const actx = ca.getContext('2d');
     actx.fillStyle = '#1e1e2e'; actx.fillRect(0, 0, ca.width, ca.height);
     let displayPixels = converted.pixels;
     if ($('shadow-toggle').checked) {
-      displayPixels = applyShadowToPixels(converted.pixels, converted.width, Math.min(converted.pixels.length, ah));
+      displayPixels = applyShadowToPixels(converted.pixels, converted.width, Math.min(converted.pixels.length, font.fontHeight));
       actx.fillStyle = '#fab387';
     } else {
       actx.fillStyle = '#a6e3a1';
     }
-    for (let y = 0; y < ah && y < displayPixels.length; y++)
+    for (let y = 0; y < font.fontHeight && y < displayPixels.length; y++)
       for (let x = 0; x < converted.width; x++)
-        if (displayPixels[y][x]) actx.fillRect(x * scale, y * scale, scale, scale);
+        if (displayPixels[y][x]) actx.fillRect(aoffX + x * ds, aoffY + y * ds, ds, ds);
   } else {
     ca.width = 0; ca.height = 0;
   }
@@ -2408,12 +2584,29 @@ function getRenderFontSize() {
 function getVertOffset() {
   return parseInt($('conv-vert-offset').value) || 0;
 }
+function getFontStyle() {
+  return $('font-style').value || 'normal';
+}
+function getFineX() {
+  return (parseInt($('conv-fine-x').value) || 0) / 10;
+}
+function getFineY() {
+  return (parseInt($('conv-fine-y').value) || 0) / 10;
+}
 $('conv-font-size').addEventListener('input', () => {
   $('conv-font-size-val').textContent = $('conv-font-size').value;
   renderConvPreview();
 });
 $('conv-vert-offset').addEventListener('input', () => {
   $('conv-vert-offset-val').textContent = $('conv-vert-offset').value;
+  renderConvPreview();
+});
+$('conv-fine-x').addEventListener('input', () => {
+  $('conv-fine-x-val').textContent = getFineX().toFixed(1);
+  renderConvPreview();
+});
+$('conv-fine-y').addEventListener('input', () => {
+  $('conv-fine-y-val').textContent = getFineY().toFixed(1);
   renderConvPreview();
 });
 
@@ -2428,6 +2621,7 @@ updateEditorAndRightPanel = function() {
 
 sysFontFamily.addEventListener('input', renderConvPreview);
 sysFontFamily.addEventListener('change', renderConvPreview);
+$('font-style').addEventListener('change', renderConvPreview);
 
 // ==================== Preview Popup ====================
 $('preview-popup-btn').addEventListener('click', () => {
