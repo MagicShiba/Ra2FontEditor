@@ -166,19 +166,21 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
           <div id="font-picker-list" class="font-picker-list"></div>
         </div>
         <select id="font-style">
-          <option value="normal">常规</option>
+          <option value="lighter">细体</option>
+          <option value="normal" selected>常规</option>
+          <option value="bold">粗体</option>
+          <option value="bolder">粗体+</option>
+          <option value="italic">斜体</option>
+          <option value="bold italic">粗斜体</option>
           <option value="100">100</option>
           <option value="200">200</option>
           <option value="300">300</option>
           <option value="400">400</option>
           <option value="500">500</option>
-          <option value="bold">粗体</option>
           <option value="600">600</option>
           <option value="700">700</option>
           <option value="800">800</option>
           <option value="900">900</option>
-          <option value="italic">斜体</option>
-          <option value="bold italic">粗斜体</option>
         </select>
       </div>
       <div id="conv-preview-section" style="display:none">
@@ -188,11 +190,11 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
             <canvas id="conv-preview-before"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span style="font-size:11px">系统字体</span>
+            <span style="font-size:11px" title="高分辨率下字体的样子">高分</span>
             <canvas id="conv-preview-sysfont"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span style="font-size:11px">原始像素</span>
+            <span style="font-size:11px" title="低分辨率下字体的样子">低分</span>
             <canvas id="conv-preview-sysfont-raw"></canvas>
           </div>
           <div class="conv-preview-item">
@@ -202,7 +204,7 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
         </div>
         <div class="conv-slider-grid">
           <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:11px;min-width:26px">128</span>
-          <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" value="15"><span id="conv-font-size-val" style="font-size:11px;min-width:16px">15</span>
+          <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" step="1" value="16"><span id="conv-font-size-val" style="font-size:11px;min-width:16px">15</span>
           <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:11px;min-width:16px">0</span>
 <span>微调X</span><input type="range" id="conv-fine-x" min="-1" max="1" value="0" step="0.1" title="微调x轴像素坐标,改进渲染"><span id="conv-fine-x-val" style="font-size:11px;min-width:16px">0.0</span>
 <span>微调Y</span><input type="range" id="conv-fine-y" min="-1" max="1" value="0" step="0.1" title="微调y轴像素坐标,没什么用,目前html渲染如此"><span id="conv-fine-y-val" style="font-size:11px;min-width:16px">0.0</span>

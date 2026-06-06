@@ -2048,22 +2048,31 @@ document.querySelector('#info-section .section-toggle')?.addEventListener('click
 let systemFonts = [...COMMON_FONTS];
 let fontPickerOpen = false;
 
-async function enumerateSystemFonts() {
-  // Try Local Font Access API first
+let localFontsTried = false;
+
+async function tryQueryLocalFonts() {
+  if (localFontsTried) return;
+  localFontsTried = true;
+  let ok = false;
   try {
-    if (typeof window.queryLocalFonts === 'function') {
-      const fonts = await window.queryLocalFonts();
-      const names = new Set();
-      for (const f of fonts) {
-        if (f.family) names.add(f.family);
-      }
-      systemFonts = [...names, ...COMMON_FONTS.filter(n => !names.has(n))];
-      return;
+    if (typeof window.queryLocalFonts !== 'function') throw new Error('not supported');
+    const fonts = await window.queryLocalFonts();
+    const names = new Set();
+    for (const f of fonts) {
+      if (f.family) names.add(f.family);
+    }
+    if (names.size > 0) {
+      systemFonts = [...names];
+      ok = true;
     }
   } catch (e) {
-    // Permission denied or not supported
+    // Permission denied
   }
+  if (!ok) systemFonts = [...COMMON_FONTS];
+  populateFontPicker();
+}
 
+async function enumerateSystemFonts() {
   // Fallback: measure with canvas
   const testStr = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   const canvas = document.createElement('canvas');
@@ -2085,10 +2094,6 @@ async function enumerateSystemFonts() {
     if (Math.abs(w - baseW) > 1) found.add(name);
   }
   systemFonts = [...found, ...COMMON_FONTS.filter(n => !found.has(n))];
-
-  if (systemFonts.length <= COMMON_FONTS.length) {
-    showToast('无法自动检测系统字体。Local Font Access API 不可用，请使用较新 Chrome/Edge (103+) 或手动输入字体名称', false);
-  }
 }
 
 // ==================== Font Picker (Custom Dropdown) ====================
@@ -2133,6 +2138,7 @@ function openFontPicker() {
   list.classList.add('open');
   fontPickerOpen = true;
   populateFontPicker();
+  tryQueryLocalFonts();
 }
 
 function closeFontPicker() {
@@ -2417,8 +2423,8 @@ function renderConvPreview() {
   $('conv-label-before').textContent = '原始-' + g.width;
 
   const scale = 4;
-  const pvW = 60;
-  const pvH = 60;
+  const pvW = 65;
+  const pvH = 65;
   const ds = converted ? Math.max(1, Math.min(scale, Math.floor(pvW / Math.max(1, converted.width)), Math.floor(pvH / Math.max(1, font.fontHeight)))) : scale;
   const aoffX = converted ? Math.floor((pvW - converted.width * ds) / 2) : 0;
   const aoffY = converted ? Math.floor((pvH - font.fontHeight * ds) / 2) : 0;
@@ -2428,11 +2434,12 @@ function renderConvPreview() {
   const bctx = cb.getContext('2d');
   bctx.fillStyle = '#1e1e2e'; bctx.fillRect(0, 0, cb.width, cb.height);
   bctx.fillStyle = '#cdd6f4';
-  const boffX = Math.floor((pvW - g.width * scale) / 2);
-  const boffY = Math.floor((pvH - g.height * scale) / 2);
+  const bscale = Math.max(1, Math.min(scale, Math.floor(pvW / Math.max(1, g.width)), Math.floor(pvH / Math.max(1, g.height))));
+  const boffX = Math.floor((pvW - g.width * bscale) / 2);
+  const boffY = Math.floor((pvH - g.height * bscale) / 2);
   for (let y = 0; y < g.height; y++)
     for (let x = 0; x < g.width; x++)
-      if (g.pixels[y] && g.pixels[y][x]) bctx.fillRect(boffX + x * scale, boffY + y * scale, scale, scale);
+      if (g.pixels[y] && g.pixels[y][x]) bctx.fillRect(boffX + x * bscale, boffY + y * bscale, bscale, bscale);
 
   // Determine font size same as renderSystemFontChar
   let baseFontSize = maxH;
@@ -2622,6 +2629,17 @@ updateEditorAndRightPanel = function() {
 sysFontFamily.addEventListener('input', renderConvPreview);
 sysFontFamily.addEventListener('change', renderConvPreview);
 $('font-style').addEventListener('change', renderConvPreview);
+$('font-style').addEventListener('wheel', e => {
+  e.preventDefault();
+  const sel = $('font-style');
+  const idx = sel.selectedIndex;
+  const dir = e.deltaY > 0 ? 1 : -1;
+  let next = idx + dir;
+  if (next < 0) next = sel.options.length - 1;
+  if (next >= sel.options.length) next = 0;
+  sel.selectedIndex = next;
+  sel.dispatchEvent(new Event('change'));
+});
 
 // ==================== Preview Popup ====================
 $('preview-popup-btn').addEventListener('click', () => {
