@@ -364,7 +364,7 @@ function renderGroup(range, codes) {
   const sharedCount = font._sharedCodes ? codes.filter(c => font._sharedCodes.has(c)).length : 0;
   if (sharedCount > 0) {
     const sharedSpan = document.createElement('span');
-    sharedSpan.style.cssText = 'color:#f9e2af;font-size:10px;margin-left:2px';
+    sharedSpan.style.cssText = 'color:#b7b;font-size:10px;margin-left:2px';
     sharedSpan.textContent = `${sharedCount} 共享`;
     header.appendChild(sharedSpan);
   }
@@ -385,7 +385,7 @@ function renderGroup(range, codes) {
   const ctx = canvas.getContext('2d');
 
   // Fill background
-  const grpBg = bgColorVal === 'transparent' ? '#1e1e2e' : bgColorVal;
+  const grpBg = bgColorVal === 'transparent' ? '#212121' : bgColorVal;
   ctx.fillStyle = grpBg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -401,11 +401,11 @@ function renderGroup(range, codes) {
 
     // Highlight if selected
     if (code === selectedCode) {
-      ctx.fillStyle = 'rgba(245,194,231,0.2)';
+      ctx.fillStyle = '#7777';
       ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
     }
     if (code !== selectedCode && selectedCodes.has(code)) {
-      ctx.fillStyle = 'rgba(166,227,161,0.15)';
+      ctx.fillStyle = '#7777';
       ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
     }
 
@@ -719,7 +719,7 @@ function addSearchHighlight(code) {
     position: absolute; left: ${ox + col * cellW}px; top: ${oy + row * cellH}px;
     width: ${cellW}px; height: ${cellH}px;
     border: 2px solid #fae371; pointer-events: none; z-index: 10;
-    box-shadow: 0 0 6px rgba(250,227,113,0.5);
+    box-shadow: 0 0 6px #7777;
   `;
   body.style.position = 'relative';
   body.appendChild(indicator);
@@ -808,7 +808,7 @@ function addSelectionHighlight(code) {
     position: absolute; left: ${ox + col * cellW}px; top: ${oy + row * cellH}px;
     width: ${cellW}px; height: ${cellH}px;
     border: 2px solid #f5c2e7; pointer-events: none; z-index: 9;
-    box-shadow: 0 0 6px rgba(245,194,231,0.5);
+    box-shadow: 0 0 6px #7777;
   `;
   body.style.position = 'relative';
   body.appendChild(indicator);
@@ -833,6 +833,8 @@ function updateEditorAndRightPanel() {
 function updateGlyphInfo() {
   const charPreview = $('glyph-char-preview');
   const charDisplay = $('glyph-char-display');
+  const charHeader = $('glyph-char-header');
+  const charDetail = $('glyph-char-detail');
   const convBtns = $('sys-convert-btns');
   if (!font || !selectedCode || !font.glyphs[selectedCode]) {
     glyphInfo.textContent = '请选择一个字符';
@@ -843,8 +845,12 @@ function updateGlyphInfo() {
   }
   if (convBtns) convBtns.style.display = 'flex';
   const g = font.glyphs[selectedCode];
-  glyphInfo.textContent = `U+${selectedCode.toString(16).padStart(4, '0')} 宽度=${g.width} 高度=${g.height}`;
+  glyphInfo.textContent = '';
   glyphWidthInput.value = g.width;
+  if (charHeader) charHeader.textContent = `U+${selectedCode.toString(16).padStart(4, '0')}`;
+  if (charDetail) {
+    charDetail.innerHTML = `<div>宽度: ${g.width}</div><div>高度: ${g.height}</div>`;
+  }
   if (charPreview && charDisplay) {
     try {
       const ch = String.fromCodePoint(selectedCode);
@@ -896,7 +902,7 @@ function renderRulers() {
   topCanvas.width = Math.max(1, contW - rulerSize);
   topCanvas.height = rulerSize;
   const tctx = topCanvas.getContext('2d');
-  tctx.fillStyle = '#1e1e2e';
+  tctx.fillStyle = '#212121';
   tctx.fillRect(0, 0, topCanvas.width, topCanvas.height);
   tctx.strokeStyle = '#a6adc8';
   tctx.fillStyle = '#cdd6f4';
@@ -926,7 +932,7 @@ function renderRulers() {
   leftCanvas.width = rulerSize;
   leftCanvas.height = Math.max(1, contH - rulerSize);
   const lctx = leftCanvas.getContext('2d');
-  lctx.fillStyle = '#1e1e2e';
+  lctx.fillStyle = '#212121';
   lctx.fillRect(0, 0, leftCanvas.width, leftCanvas.height);
   lctx.strokeStyle = '#a6adc8';
   lctx.fillStyle = '#cdd6f4';
@@ -1033,7 +1039,7 @@ function renderEditor() {
   editorCanvas.height = h * zoom;
 
   // Background
-  ctx.fillStyle = bgColorVal === 'transparent' ? '#1e1e2e' : bgColorVal;
+  ctx.fillStyle = bgColorVal === 'transparent' ? '#212121' : bgColorVal;
   ctx.fillRect(0, 0, editorCanvas.width, editorCanvas.height);
 
   // Pixels
@@ -2296,7 +2302,7 @@ $('copy-to-clipboard').addEventListener('click', () => {
   const off = document.createElement('canvas');
   off.width = g.width; off.height = g.height;
   const ctx = off.getContext('2d');
-  ctx.fillStyle = bgColorVal === 'transparent' ? '#1e1e2e' : bgColorVal;
+  ctx.fillStyle = bgColorVal === 'transparent' ? '#212121' : bgColorVal;
   ctx.fillRect(0, 0, g.width, g.height);
   ctx.fillStyle = fgColorVal;
   for (let y = 0; y < g.height; y++)
@@ -2432,8 +2438,8 @@ function renderConvPreview() {
   const cb = $('conv-preview-before');
   cb.width = pvW; cb.height = pvH;
   const bctx = cb.getContext('2d');
-  bctx.fillStyle = '#1e1e2e'; bctx.fillRect(0, 0, cb.width, cb.height);
-  bctx.fillStyle = '#cdd6f4';
+  bctx.fillStyle = '#212121'; bctx.fillRect(0, 0, cb.width, cb.height);
+  bctx.fillStyle = '#eee';
   const bscale = Math.max(1, Math.min(scale, Math.floor(pvW / Math.max(1, g.width)), Math.floor(pvH / Math.max(1, g.height))));
   const boffX = Math.floor((pvW - g.width * bscale) / 2);
   const boffY = Math.floor((pvH - g.height * bscale) / 2);
@@ -2471,9 +2477,9 @@ function renderConvPreview() {
   const cs = $('conv-preview-sysfont');
   cs.width = pvW; cs.height = pvH;
   const sctx = cs.getContext('2d');
-  sctx.fillStyle = '#1e1e2e'; sctx.fillRect(0, 0, cs.width, cs.height);
+  sctx.fillStyle = '#212121'; sctx.fillRect(0, 0, cs.width, cs.height);
   sctx.font = `${fontStyle} ${sysBaseFontSize * scale}px "${family}"`;
-  sctx.fillStyle = '#f5c2e7';
+  sctx.fillStyle = '#eee';
   sctx.textBaseline = 'top';
   sctx.textAlign = 'left';
   const sm = sctx.measureText(ch);
@@ -2514,7 +2520,7 @@ function renderConvPreview() {
     cr.width = pvW;
     cr.height = pvH;
     const rctx = cr.getContext('2d');
-    rctx.fillStyle = '#1e1e2e';
+    rctx.fillStyle = '#212121';
     rctx.fillRect(0, 0, cr.width, cr.height);
 
     if (rl <= rr) {
@@ -2564,7 +2570,7 @@ function renderConvPreview() {
     $('conv-label-after').textContent = '转换-' + converted.width;
     ca.width = pvW; ca.height = pvH;
     const actx = ca.getContext('2d');
-    actx.fillStyle = '#1e1e2e'; actx.fillRect(0, 0, ca.width, ca.height);
+    actx.fillStyle = '#212121'; actx.fillRect(0, 0, ca.width, ca.height);
     let displayPixels = converted.pixels;
     if ($('shadow-toggle').checked) {
       displayPixels = applyShadowToPixels(converted.pixels, converted.width, Math.min(converted.pixels.length, font.fontHeight));
@@ -2678,7 +2684,7 @@ $('preview-popup-btn').addEventListener('click', () => {
   const totalH = Math.max(0, lines.length * lineH - 1);
   canvas.width = maxW; canvas.height = totalH;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = bgColorVal === 'transparent' ? '#1e1e2e' : bgColorVal;
+  ctx.fillStyle = bgColorVal === 'transparent' ? '#212121' : bgColorVal;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = fgColorVal;
 
