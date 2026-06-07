@@ -904,8 +904,8 @@ function renderRulers() {
   const tctx = topCanvas.getContext('2d');
   tctx.fillStyle = '#212121';
   tctx.fillRect(0, 0, topCanvas.width, topCanvas.height);
-  tctx.strokeStyle = '#a6adc8';
-  tctx.fillStyle = '#cdd6f4';
+  tctx.strokeStyle = '#FF8800';
+  tctx.fillStyle = '#FFF300';
   tctx.font = '11px monospace';
   tctx.textAlign = 'center';
   tctx.textBaseline = 'top';
@@ -934,8 +934,8 @@ function renderRulers() {
   const lctx = leftCanvas.getContext('2d');
   lctx.fillStyle = '#212121';
   lctx.fillRect(0, 0, leftCanvas.width, leftCanvas.height);
-  lctx.strokeStyle = '#a6adc8';
-  lctx.fillStyle = '#cdd6f4';
+  lctx.strokeStyle = '#FF8800';
+  lctx.fillStyle = '#FFF300';
   lctx.font = '11px monospace';
   lctx.textAlign = 'right';
   lctx.textBaseline = 'middle';
@@ -1053,7 +1053,7 @@ function renderEditor() {
   }
 
   // Grid lines
-  ctx.strokeStyle = 'rgba(205,214,244,0.1)';
+  ctx.strokeStyle = 'rgba(205,214,244,0.2)';
   ctx.lineWidth = 0.5;
   for (let x = 1; x < w; x++) {
     ctx.beginPath();

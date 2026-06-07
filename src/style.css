@@ -334,8 +334,8 @@ cursor: pointer;
 }
 .modal-header { display: flex; justify-content: space-between; align-items: center;}
 .modal-title { font-size: 16px; color: #eedd00; }
-.modal-close { background: none; border: none; color: #777; font-size: 18px; cursor: pointer; }
-.modal-close:hover { color: #f38ba8; }
+.modal-close {font-size: 18px; cursor: pointer; }
+.modal-close:hover { color: #fbf; }
 .modal-body { overflow-y: auto; flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; padding: 4px 0; }
 .modal-footer { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
 .modal-char-item {
