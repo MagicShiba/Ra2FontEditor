@@ -292,7 +292,7 @@ function parseFont(data) {
   dropzone.classList.add('dropped');
   dropzone.textContent = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : '已加载字体';
   infoContent.style.display = 'block';
-  document.querySelector('#info-section .toggle-icon').textContent = '▼';
+  document.querySelector('#info-section .toggle-icon').textContent = '⌵';
   buildCharGroups();
   updateEditorAndRightPanel();
   renderPreview();
@@ -344,7 +344,7 @@ function renderGroup(range, codes) {
   check.className = 'group-check';
   const toggle = document.createElement('span');
   toggle.className = 'toggle';
-  toggle.textContent = '▸';
+  toggle.textContent = '❯';
   const label = document.createElement('span');
   label.className = 'label';
   label.textContent = range.name;
@@ -527,7 +527,7 @@ function renderGroup(range, codes) {
   header.addEventListener('click', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL' || e.target.tagName === 'BUTTON') return;
     body.classList.toggle('collapsed');
-    toggle.textContent = body.classList.contains('collapsed') ? '▸' : '▾';
+    toggle.textContent = body.classList.contains('collapsed') ? '❯' : '⌵';
   });
 
   check.addEventListener('change', function() {
@@ -585,10 +585,10 @@ function rebuildCharGroups() {
     const toggle = g.querySelector('.toggle');
     if (collapseStates[start]) {
       body.classList.add('collapsed');
-      toggle.textContent = '▸';
+      toggle.textContent = '❯';
     } else {
       body.classList.remove('collapsed');
-      toggle.textContent = '▾';
+      toggle.textContent = '⌵';
     }
   });
   charGroupList.scrollTop = scrollTop;
@@ -2035,7 +2035,7 @@ navDropdown.addEventListener('change', () => {
   if (target) {
     const body = target.querySelector('.char-group-body');
     body.classList.remove('collapsed');
-    target.querySelector('.toggle').textContent = '▾';
+    target.querySelector('.toggle').textContent = '⌵';
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   navDropdown.selectedIndex = 0;
@@ -2047,7 +2047,7 @@ document.querySelector('#info-section .section-toggle')?.addEventListener('click
   if (!content) return;
   const isVisible = content.style.display !== 'none';
   content.style.display = isVisible ? 'none' : 'block';
-  this.querySelector('.toggle-icon').textContent = isVisible ? '▶' : '▼';
+  this.querySelector('.toggle-icon').textContent = isVisible ? '❯' : '⌵';
 });
 
 // ==================== System Font List ====================

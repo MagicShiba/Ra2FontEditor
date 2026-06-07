@@ -2,13 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>RA2 位图字体编辑器</title>
+<title>RA2 字体编辑器</title>
 <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
 
-<h1>RA2 位图字体编辑器
-  <label class="sc-tc-toggle top-toggle" title="将简体中文转为繁体，用于输简体显示繁体。" style="margin-left:16px;">
+<h1>RA2 字体编辑器
+  <label class="sc-tc-toggle" title="将简体中文转为繁体，用于输简体显示繁体。" style="margin-left:16px;">
     <input type="checkbox" id="sc-tc-toggle">简繁转换
   </label>
 </h1>
@@ -18,7 +18,7 @@
   <!-- ===== LEFT PANEL ===== -->
   <div class="panel left-panel">
     <div id="info-section">
-      <h2 class="section-toggle" data-target="info-content">字体信息 <span class="toggle-icon">▼</span></h2>
+      <h2 class="section-toggle" data-target="info-content">字体信息 <span class="toggle-icon">⌵</span></h2>
       <div id="info-content">
     <div id="dropzone">
       拖放 .FNT 文件到此处<br>
@@ -29,7 +29,7 @@
         <div class="field-row" style="margin-top:4px">
           <label title="Ideograph Width（来自字体文件头）">宽度 <input type="number" id="font-width-input" min="1" max="255"></label>
           <label>高度 <input type="number" id="font-height-input" min="1" max="255"></label>
-          <button id="apply-font-size" title="默认应该不需要改这个，我不知道会有什么后果。">应用</button>
+          <button id="apply-font-size" title="全局字体画布大小，具体宽度由每个字单独指定，谨慎修改。">应用</button>
         </div>
         <button id="save-btn" style="margin-top:4px" class="primary">保存字体</button>
       </div>
@@ -56,7 +56,7 @@
       <h2>编辑器</h2>
       <div class="toolbar">
         <label>缩放 <input type="range" id="editor-zoom" min="2" max="32" step="1" value="10"></label>
-        <label style="font-size:12px;color:#a6adc8;display:flex;align-items:center;gap:2px" title="显示/隐藏标尺,拖动获得辅助线"><input type="checkbox" id="ruler-toggle" checked>标尺</label>
+        <label title="显示/隐藏标尺,拖动获得辅助线"><input type="checkbox" id="ruler-toggle" checked>标尺</label>
         <button id="clear-guides" title="清除所有辅助线">清辅助线</button>
         <button id="clear-editor" title="清空画布">清空画布</button>
         <button id="copy-to-clipboard" title="复制原始分辨率图像到剪切板">复制图像</button>
@@ -121,7 +121,7 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
       <div id="glyph-char-header" style="font-size:14px;color:#aaa;">U+0000</div>
       <div style="display:flex;align-items:center;gap:12px">
         <div id="glyph-char-display" style="font-size:40px;color:#ccc;"></div>
-        <div id="glyph-char-detail" style="font-size:12px;color:#aaa;text-align:left;line-height:1.6">
+        <div id="glyph-char-detail" style="font-size:13px;color:#aaa;text-align:left;line-height:1.5">
           <div>宽度: 0</div>
           <div>高度: 0</div>
         </div>
@@ -168,7 +168,7 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
       <div class="field-row font-picker-row">
         <div id="font-picker" class="font-picker">
           <input type="text" id="sys-font-family" placeholder="选择字体或输入筛选...">
-          <span class="picker-arrow">▼</span>
+          <span class="picker-arrow">⌵</span>
           <div id="font-picker-list" class="font-picker-list"></div>
         </div>
         <select id="font-style">
