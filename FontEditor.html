@@ -7,10 +7,12 @@
 </head>
 <body>
 
-<h1>RA2 字体编辑器
-  <label class="sc-tc-toggle" title="将简体中文转为繁体，用于输简体显示繁体。" style="margin-left:16px;">
-    <input type="checkbox" id="sc-tc-toggle">简繁转换
+<h1>
+  <span data-i18n="app.title">RA2 字体编辑器</span>
+  <label class="sc-tc-toggle" data-i18n-title="scTc.title" style="margin-left:16px;">
+    <input type="checkbox" id="sc-tc-toggle"><span data-i18n="scTc.label">简繁转换</span>
   </label>
+  <button id="lang-toggle" class="lang-toggle" data-i18n-title="langToggle.title" title="切换语言">EN</button>
 </h1>
 
 <div class="app-layout" id="app-layout">
@@ -18,33 +20,36 @@
   <!-- ===== LEFT PANEL ===== -->
   <div class="panel left-panel no-font" id="left-panel">
     <div id="info-section">
-      <h2 class="section-toggle" data-target="info-content">字体信息 <span class="toggle-icon">⌵</span></h2>
+      <h2 class="section-toggle" data-target="info-content"><span data-i18n="fontInfo.title">字体信息</span> <span class="toggle-icon">⌵</span></h2>
       <div id="info-content">
     <div id="dropzone">
-      拖放 .FNT 文件到此处<br>
-      <span style="font-size:12px;color:#777;">或点击选择文件</span>
+      <span data-i18n="dropzone.dropHere">拖放 .FNT 文件到此处</span><br>
+      <span style="font-size:12px;color:#777;" data-i18n="dropzone.orClick">或点击选择文件</span>
       <input type="file" id="file-input" accept=".fnt,.FNT" style="display:none">
     </div>
         <div class="info-grid" id="info-grid"></div>
         <div class="field-row font-size-editor" style="margin-top:4px">
-          <label title="Ideograph Width（来自字体文件头）">宽度 <input type="number" id="font-width-input" min="1" max="255"></label>
-          <label>高度 <input type="number" id="font-height-input" min="1" max="255"></label>
-          <button id="apply-font-size" title="全局字体画布大小，具体宽度由每个字单独指定，谨慎修改。">应用</button>
+          <label data-i18n-title="field.width.title"><span data-i18n="field.width">宽度</span> <input type="number" id="font-width-input" min="1" max="255"></label>
+          <label><span data-i18n="field.height">高度</span> <input type="number" id="font-height-input" min="1" max="255"></label>
+          <button id="apply-font-size" data-i18n-title="applyFontSize.title" data-i18n="apply">应用</button>
         </div>
-        <button id="save-btn" style="margin-top:4px" class="primary">保存字体</button>
+        <button id="save-btn" style="margin-top:4px" class="primary" data-i18n="saveFont">保存字体</button>
       </div>
     </div>
 
-    <h2 class="char-list-heading">字符列表</h2>
+    <div class="char-list-header">
+      <h2 class="char-list-heading" data-i18n="charList.title">字符列表</h2>
+      <div id="batch-info-bar" style="display:none;font-size:12px;color:#a6e3a1;flex-shrink:0;padding:2px 4px;background:#111;border-radius:3px;">
+        已选 <span id="batch-count">0</span> 个字符
+      </div>
+      <button id="refresh-char-list" data-i18n-title="refreshList.title" data-i18n="refreshList">刷新列表</button>
+    </div>
     <div class="search-row" style="display:none">
       <select id="nav-dropdown" style="display:none">
-        <option value="">— 快速定位 —</option>
+        <option value="" data-i18n="nav.quickJump">— 快速定位 —</option>
       </select>
-      <input type="text" id="search-input" placeholder="搜索字符/U+编码...">
-      <button id="search-add-btn">添加</button>
-    </div>
-    <div id="batch-info-bar" style="display:none;font-size:12px;color:#a6e3a1;flex-shrink:0;padding:2px 4px;background:#111;border-radius:3px;">
-      已选 <span id="batch-count">0</span> 个字符
+      <input type="text" id="search-input" data-i18n-placeholder="search.placeholder" placeholder="搜索字符/U+编码...">
+      <button id="search-add-btn" data-i18n="search.add">添加</button>
     </div>
 
     <div id="char-group-list" style="flex:1;overflow-y:auto;display:none;flex-direction:column;gap:3px;min-height:0"></div>
@@ -53,16 +58,17 @@
   <!-- ===== CENTER PANEL ===== -->
   <div class="panel center-panel" id="center-panel">
     <div class="editor-header-row">
-      <h2>编辑器</h2>
+      <h2 data-i18n="editor.title">编辑器</h2>
       <div class="toolbar">
-        <label>缩放 <input type="range" id="editor-zoom" min="2" max="32" step="1" value="10"></label>
-        <label id="brush-size-label" title="画笔大小,在编辑画布上按 + / - 或 [ / ] 调整">画笔: 1</label>
-        <label title="显示/隐藏标尺。左键点击标尺创建辅助线,拖动可移动,右键点击辅助线移除"><input type="checkbox" id="ruler-toggle" checked>标尺</label>
-        <button id="clear-guides" title="清除所有辅助线">清辅助线</button>
-        <button id="clear-editor" title="清空画布">清空画布</button>
-        <button id="copy-to-clipboard" title="复制原始分辨率图像到剪切板">复制图像</button>
-        <button id="refresh-char-list" title="刷新字符列表">刷新列表</button>
-        <button id="user-guide-btn" title="查看使用说明">使用说明</button>
+        <label><span data-i18n="zoom">缩放</span> <input type="range" id="editor-zoom" min="2" max="32" step="1" value="10"></label>
+        <label id="brush-size-label" data-i18n-title="brushLabel.title">画笔: 1</label>
+        <label data-i18n-title="ruler.title"><input type="checkbox" id="ruler-toggle" checked><span data-i18n="ruler">标尺</span></label>
+        <label data-i18n-title="autoRefresh.title"><input type="checkbox" id="auto-refresh-toggle" checked><span data-i18n="autoRefresh">自动刷新</span></label>
+        <button id="clear-guides" data-i18n-title="clearGuides.title" data-i18n="clearGuides">清辅助线</button>
+        <button id="restore-btn" data-i18n-title="restore.title" data-i18n="restore" disabled>还原</button>
+        <button id="clear-editor" data-i18n-title="clearCanvas.title" data-i18n="clearCanvas">清空画布</button>
+        <button id="copy-to-clipboard" data-i18n-title="copyImage.title" data-i18n="copyImage">复制图像</button>
+        <button id="user-guide-btn" data-i18n-title="userGuide.title" data-i18n="userGuide">使用说明</button>
       </div>
     </div>
     <div id="editor-container">
@@ -76,25 +82,25 @@
     <div id="preview-section">
       <div id="preview-resize-handle"></div>
       <div class="preview-header-row">
-        <h2>预览</h2>
-        <label>缩放倍数 <input type="range" id="preview-scale" min="1" max="6" step="1" value="2"></label>
-        <label>前景色 <input type="color" id="fg-color" value="#FFAA00">
-          <select id="fg-preset" title="预设颜色">
-            <option value="">预设</option>
-            <option value="#FFFF00">黄色</option>
-            <option value="#FF8800">橙色</option>
-            <option value="#FF0000">红色</option>
-            <option value="#00FFFF">青色</option>
-            <option value="#00FF00">绿色</option>
-            <option value="#89b4fa">蓝色</option>
-            <option value="#4400ff">紫色</option>
-            <option value="#f5c2e7">品红</option>
-            <option value="#eba0ac">粉红</option>
-            <option value="#FFFFFF">白色</option>
+        <h2 data-i18n="preview.title">预览</h2>
+        <label><span data-i18n="preview.scale">缩放倍数</span> <input type="range" id="preview-scale" min="1" max="6" step="1" value="2"></label>
+        <label><span data-i18n="preview.fg">前景色</span> <input type="color" id="fg-color" value="#FFAA00">
+          <select id="fg-preset" data-i18n-title="preview.preset.title">
+            <option value="" data-i18n="preview.preset">预设</option>
+            <option value="#FFFF00" data-i18n="color.yellow">黄色</option>
+            <option value="#FF8800" data-i18n="color.orange">橙色</option>
+            <option value="#FF0000" data-i18n="color.red">红色</option>
+            <option value="#00FFFF" data-i18n="color.cyan">青色</option>
+            <option value="#00FF00" data-i18n="color.green">绿色</option>
+            <option value="#89b4fa" data-i18n="color.blue">蓝色</option>
+            <option value="#4400ff" data-i18n="color.purple">紫色</option>
+            <option value="#f5c2e7" data-i18n="color.magenta">品红</option>
+            <option value="#eba0ac" data-i18n="color.pink">粉红</option>
+            <option value="#FFFFFF" data-i18n="color.white">白色</option>
           </select>
         </label>
-        <label>背景色 <input type="color" id="bg-color" value="#1e1e2e"></label>
-        <button id="preview-popup-btn" title="放大高分辨率查看">查看</button>
+        <label><span data-i18n="preview.bg">背景色</span> <input type="color" id="bg-color" value="#1e1e2e"></label>
+        <button id="preview-popup-btn" data-i18n-title="preview.popup.title" data-i18n="preview.popup">查看</button>
       </div>
       <div class="preview-area">
       <div class="preview-body">
@@ -116,8 +122,8 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
 
   <!-- ===== RIGHT PANEL ===== -->
   <div class="panel right-panel" id="right-panel">
-    <h2>符号参数</h2>
-    <div id="glyph-info">请选择一个字符</div>
+    <h2 data-i18n="glyphProps.title">符号参数</h2>
+    <div id="glyph-info" data-i18n="glyph.selectChar">请选择一个字符</div>
     <div id="glyph-char-preview" style="display:none;padding:2px 8px;background:#212121;border:2px solid #777;width: max-content; margin-top: -8px;">
       <div id="glyph-char-header" style="font-size:14px;color:#aaa;">U+0000</div>
       <div style="display:flex;align-items:center;gap:12px">
@@ -130,15 +136,15 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
     </div>
 
     <div class="section">
-      <h3>调整宽度</h3>
+      <h3 data-i18n="section.adjustWidth">调整宽度</h3>
       <div class="field-row">
         <input type="number" id="glyph-width-input" min="1" max="255" style="width:70px">
-        <button id="apply-width" class="primary">应用</button>
+        <button id="apply-width" class="primary" data-i18n="apply">应用</button>
       </div>
     </div>
 
     <div class="section">
-      <h3>移动位置</h3>
+      <h3 data-i18n="section.move">移动位置</h3>
       <div class="move-grid">
         <div></div><button id="move-up">↑</button><div></div>
         <button id="move-left">←</button><button id="move-center">↻</button><button id="move-right">→</button>
@@ -147,38 +153,38 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
     </div>
 
     <div class="section">
-      <h3>批量操作</h3>
-      <div id="batch-info" style="font-size:12px;color:#777;">在左侧勾选范围进行批量操作</div>
+      <h3 data-i18n="section.batch">批量操作</h3>
+      <div id="batch-info" style="font-size:12px;color:#777;" data-i18n="batch.hint">在左侧勾选范围进行批量操作</div>
       <div class="field-row" style="margin-top:4px">
-        <label>宽度 <input type="number" id="batch-width-input" min="1" value="17" max="255" style="width:60px"></label>
-        <button id="batch-set-width">设置</button>
+        <label><span data-i18n="field.width">宽度</span> <input type="number" id="batch-width-input" min="1" value="17" max="255" style="width:60px"></label>
+        <button id="batch-set-width" data-i18n="batch.set">设置</button>
       </div>
       <div class="field-row" style="margin-top:4px">
-        <button id="batch-center">居中</button>
-        <button id="batch-clear-all">清除全部</button>
+        <button id="batch-center" data-i18n="batch.center">居中</button>
+        <button id="batch-clear-all" data-i18n="batch.clearAll">清除全部</button>
       </div>
       <div class="field-row" style="margin-top:4px">
-        <button id="batch-move-up" title="向上移动1像素"> ↑ </button>
-        <button id="batch-move-down" title="向下移动1像素"> ↓ </button>
+        <button id="batch-move-up" data-i18n-title="batch.moveUp.title"> ↑ </button>
+        <button id="batch-move-down" data-i18n-title="batch.moveDown.title"> ↓ </button>
       </div>
     </div>
 
     <div class="section">
-      <h2>系统字体转为RA2字体</h2>
-    <div class="right-drop-hint" id="right-drop-hint">拖放字体文件到此处<br><span style="font-size:10px;color:#777;">.fnt / 系统字体文件</span></div>
+      <h2 data-i18n="sysConvert.title">系统字体转为RA2字体</h2>
+    <div class="right-drop-hint" id="right-drop-hint"><span data-i18n="sysConvert.dropHint">拖放字体文件到此处</span><br><span style="font-size:10px;color:#777;" data-i18n="sysConvert.dropSub">.fnt / 系统字体文件</span></div>
       <div class="field-row font-picker-row">
         <div id="font-picker" class="font-picker">
-          <input type="text" id="sys-font-family" placeholder="选择字体或输入筛选...">
+          <input type="text" id="sys-font-family" data-i18n-placeholder="sysConvert.fontPlaceholder" placeholder="选择字体或输入筛选...">
           <span class="picker-arrow">⌵</span>
           <div id="font-picker-list" class="font-picker-list"></div>
         </div>
         <select id="font-style">
-          <option value="lighter">细体</option>
-          <option value="normal" selected>常规</option>
-          <option value="bold">粗体</option>
-          <option value="bolder">粗体+</option>
-          <option value="italic">斜体</option>
-          <option value="bold italic">粗斜体</option>
+          <option value="lighter" data-i18n="fontStyle.lighter">细体</option>
+          <option value="normal" selected data-i18n="fontStyle.normal">常规</option>
+          <option value="bold" data-i18n="fontStyle.bold">粗体</option>
+          <option value="bolder" data-i18n="fontStyle.bolder">粗体+</option>
+          <option value="italic" data-i18n="fontStyle.italic">斜体</option>
+          <option value="bold italic" data-i18n="fontStyle.boldItalic">粗斜体</option>
           <option value="100">100</option>
           <option value="200">200</option>
           <option value="300">300</option>
@@ -193,41 +199,41 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
       <div id="conv-preview-section" style="display:none">
         <div class="conv-preview-row">
           <div class="conv-preview-item">
-            <span id="conv-label-before" style="font-size:12px">原始</span>
+            <span id="conv-label-before" style="font-size:12px" data-i18n="conv.original">原始</span>
             <canvas id="conv-preview-before"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span style="font-size:12px" title="高分辨率下字体的样子">高分</span>
+            <span style="font-size:12px" data-i18n-title="conv.hi.title" data-i18n="conv.hi">高分</span>
             <canvas id="conv-preview-sysfont"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span style="font-size:12px" title="低分辨率下字体的样子">低分</span>
+            <span style="font-size:12px" data-i18n-title="conv.lo.title" data-i18n="conv.lo">低分</span>
             <canvas id="conv-preview-sysfont-raw"></canvas>
           </div>
           <div class="conv-preview-item">
-            <span id="conv-label-after" style="font-size:12px">转换</span>
+            <span id="conv-label-after" style="font-size:12px" data-i18n="conv.converted">转换</span>
             <canvas id="conv-preview-after"></canvas>
           </div>
         </div>
         <div class="conv-slider-grid">
-          <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:12px;min-width:26px">128</span>
-          <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" step="1" value="16"><span id="conv-font-size-val" style="font-size:12px;min-width:16px">15</span>
-          <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:12px;min-width:16px">0</span>
-<span>微调X</span><input type="range" id="conv-fine-x" min="-1" max="1" value="0" step="0.1" title="微调x轴像素坐标;由于字形宽度按内容自动裁剪,水平偏移通常会被裁剪抵消"><span id="conv-fine-x-val" style="font-size:12px;min-width:16px">0.0</span>
-<span>微调Y</span><input type="range" id="conv-fine-y" min="-1" max="1" value="0" step="0.1" title="微调y轴像素坐标;整数部分为输出格位移,小数部分以位图像素插值实现亚像素偏移(浏览器对绘制坐标取整,亚像素需靠插值完成)"><span id="conv-fine-y-val" style="font-size:12px;min-width:16px">0.0</span>
+          <span data-i18n="conv.threshold">阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:12px;min-width:26px">128</span>
+          <span data-i18n="conv.fontSize">字号</span><input type="range" id="conv-font-size" min="10" max="22" step="1" value="16"><span id="conv-font-size-val" style="font-size:12px;min-width:16px">15</span>
+          <span data-i18n="conv.vertOffset">垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:12px;min-width:16px">0</span>
+<span data-i18n="conv.fineX">微调X</span><input type="range" id="conv-fine-x" min="-1" max="1" value="0" step="0.1" data-i18n-title="conv.fineX.title"><span id="conv-fine-x-val" style="font-size:12px;min-width:16px">0.0</span>
+<span data-i18n="conv.fineY">微调Y</span><input type="range" id="conv-fine-y" min="-1" max="1" value="0" step="0.1" data-i18n-title="conv.fineY.title"><span id="conv-fine-y-val" style="font-size:12px;min-width:16px">0.0</span>
         </div>
         <div class="field-row" style="margin-top:4px">
-          <label class="sc-tc-toggle" title="开启：分离数据，单个/批量操作均先分配新数据空间再修改">
-            <input type="checkbox" id="separate-shared" checked>分离共享字符
+          <label class="sc-tc-toggle" data-i18n-title="conv.separate.title.on">
+            <input type="checkbox" id="separate-shared" checked><span data-i18n="conv.separate">分离共享字符</span>
           </label>
-          <label class="sc-tc-toggle" title="图一乐，没啥用。&#10;仅保留右下+右侧1px阴影,剔除原文字,营造3D镂空效果">
-            <input type="checkbox" id="shadow-toggle">3D阴影
+          <label class="sc-tc-toggle" data-i18n-title="conv.shadow.title">
+            <input type="checkbox" id="shadow-toggle"><span data-i18n="conv.shadow">3D阴影</span>
           </label>
         </div>
       </div>
       <div class="field-row" id="sys-convert-btns" style="margin-top:4px;display:none">
-        <button id="sys-font-convert" class="primary">转换选中</button>
-        <button id="sys-font-convert-all" class="primary">转换全部</button>
+        <button id="sys-font-convert" class="primary" data-i18n="conv.convertSel">转换选中</button>
+        <button id="sys-font-convert-all" class="primary" data-i18n="conv.convertAll">转换全部</button>
       </div>
     </div>
   </div>
@@ -236,23 +242,25 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
 <div id="user-guide-overlay" class="modal-overlay">
   <div class="modal-box" style="max-width:600px;">
     <div class="modal-header">
-      <span class="modal-title">使用说明</span>
+      <span class="modal-title" data-i18n="userGuide">使用说明</span>
       <button class="modal-close" id="user-guide-close">&times;</button>
     </div>
-    <div class="modal-body" id="user-guide-body" style="white-space:pre-wrap;font-size:13px">详细功能查看readme文件
+    <div class="modal-body" id="user-guide-body" style="white-space:pre-wrap;font-size:13px" data-i18n-html="guide.body">详细功能查看readme文件
 操作提示：
 - 拖放 .FNT 文件到左侧区域加载字体
+- 左侧修改字体全局宽高
+- "保存字体" 下载修改后的字体
 - 点击字符列表中的字符进行编辑
 - 勾选或shift+鼠标框选可批量处理字符,ctrl+框选是反选
-- 角标表示当前字符是占位符,与其它字符使用相同数据
+- 角标表示当前字符是占位符或者与其它字符使用相同数据
 
 - 使用右侧移动按钮调整字符位置
 - 在右侧选择字体后才能替换字符
 - 占位符会自动重新分配空间,你不用关心
 - 你可以为不同选选区用不同的字体
 - 3D阴影纯图一乐
-- 虽然文档说字体数据有限制,为256像素,即16x16或15x17，实际上你可以超过
-- - 由于不同字显示不一样，因此你能遇到15生成13宽，所以可以超过15
+- 虽然字体文档说数据有限制,为256像素,即16x16或15x17，实际上你可以超过,过大会有一些显示问题
+- - 由于不同字体显示不一样，因此你能遇到15字体生成13宽度，所以字体大小可以超过15
 
 编辑区：
 - 鼠标滚轮：缩放编辑区
@@ -275,6 +283,7 @@ B站:
 
 <div id="toast-container"></div>
 
+<script src="src/i18n.js"></script>
 <script src="src/STConversion.js"></script>
 <script src="src/app.js"></script>
 </body>

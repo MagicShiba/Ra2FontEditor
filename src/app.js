@@ -1,40 +1,45 @@
 // ==================== Unicode Ranges ====================
 const UNICODE_RANGES = [
-  { name: 'C0控制符+基本拉丁文(ANSI)', start: 0x0000, end: 0x007F },
-  { name: '拉丁文补充-1', start: 0x0080, end: 0x00FF },
-  { name: '拉丁文扩展-A', start: 0x0100, end: 0x017F },
-  { name: '拉丁文扩展-B', start: 0x0180, end: 0x024F },
-  { name: '国际音标扩展', start: 0x0250, end: 0x02AF },
-  { name: '修饰用间隔符号', start: 0x02B0, end: 0x02FF },
-  { name: '组合附加符号', start: 0x0300, end: 0x036F },
-  { name: '希腊文和科普特文', start: 0x0370, end: 0x03FF },
-  { name: '西里尔文', start: 0x0400, end: 0x04FF },
-  { name: '西里尔文补充', start: 0x0500, end: 0x052F },
-  { name: '亚美尼亚文', start: 0x0530, end: 0x058F },
-  { name: '希伯来文', start: 0x0590, end: 0x05FF },
-  { name: '阿拉伯文', start: 0x0600, end: 0x06FF },
-  { name: '天城文', start: 0x0900, end: 0x097F },
-  { name: '孟加拉文', start: 0x0980, end: 0x09FF },
-  { name: '通用标点符号', start: 0x2000, end: 0x206F },
-  { name: '货币符号', start: 0x20A0, end: 0x20CF },
-  { name: '类字母符号', start: 0x2100, end: 0x214F },
-  { name: '箭头', start: 0x2190, end: 0x21FF },
-  { name: '数学运算符', start: 0x2200, end: 0x22FF },
-  { name: '制表符', start: 0x2500, end: 0x257F },
-  { name: '方块元素', start: 0x2580, end: 0x259F },
-  { name: '几何图形', start: 0x25A0, end: 0x25FF },
-  { name: '杂项符号', start: 0x2600, end: 0x26FF },
-  { name: 'CJK符号和标点', start: 0x3000, end: 0x303F },
-  { name: '平假名', start: 0x3040, end: 0x309F },
-  { name: '片假名', start: 0x30A0, end: 0x30FF },
-  { name: '谚文兼容字母', start: 0x3130, end: 0x318F },
-  { name: '带括号CJK字母月份', start: 0x3200, end: 0x32FF },
-  { name: 'CJK统一表意文字', start: 0x4E00, end: 0x9FFF },
-  { name: '谚文音节', start: 0xAC00, end: 0xD7AF },
-  { name: '私用区', start: 0xE000, end: 0xF8FF },
-  { name: '半角/全角形式', start: 0xFF00, end: 0xFFEF },
-  { name: '特殊字符', start: 0xFFF0, end: 0xFFFF },
+  { name: 'C0控制符+基本拉丁文(ANSI)', nameEn: 'C0 Controls + Basic Latin (ANSI)', start: 0x0000, end: 0x007F },
+  { name: '拉丁文补充-1', nameEn: 'Latin-1 Supplement', start: 0x0080, end: 0x00FF },
+  { name: '拉丁文扩展-A', nameEn: 'Latin Extended-A', start: 0x0100, end: 0x017F },
+  { name: '拉丁文扩展-B', nameEn: 'Latin Extended-B', start: 0x0180, end: 0x024F },
+  { name: '国际音标扩展', nameEn: 'IPA Extensions', start: 0x0250, end: 0x02AF },
+  { name: '修饰用间隔符号', nameEn: 'Spacing Modifier Letters', start: 0x02B0, end: 0x02FF },
+  { name: '组合附加符号', nameEn: 'Combining Diacritical Marks', start: 0x0300, end: 0x036F },
+  { name: '希腊文和科普特文', nameEn: 'Greek and Coptic', start: 0x0370, end: 0x03FF },
+  { name: '西里尔文', nameEn: 'Cyrillic', start: 0x0400, end: 0x04FF },
+  { name: '西里尔文补充', nameEn: 'Cyrillic Supplement', start: 0x0500, end: 0x052F },
+  { name: '亚美尼亚文', nameEn: 'Armenian', start: 0x0530, end: 0x058F },
+  { name: '希伯来文', nameEn: 'Hebrew', start: 0x0590, end: 0x05FF },
+  { name: '阿拉伯文', nameEn: 'Arabic', start: 0x0600, end: 0x06FF },
+  { name: '天城文', nameEn: 'Devanagari', start: 0x0900, end: 0x097F },
+  { name: '孟加拉文', nameEn: 'Bengali', start: 0x0980, end: 0x09FF },
+  { name: '通用标点符号', nameEn: 'General Punctuation', start: 0x2000, end: 0x206F },
+  { name: '货币符号', nameEn: 'Currency Symbols', start: 0x20A0, end: 0x20CF },
+  { name: '类字母符号', nameEn: 'Letterlike Symbols', start: 0x2100, end: 0x214F },
+  { name: '箭头', nameEn: 'Arrows', start: 0x2190, end: 0x21FF },
+  { name: '数学运算符', nameEn: 'Mathematical Operators', start: 0x2200, end: 0x22FF },
+  { name: '制表符', nameEn: 'Box Drawing', start: 0x2500, end: 0x257F },
+  { name: '方块元素', nameEn: 'Block Elements', start: 0x2580, end: 0x259F },
+  { name: '几何图形', nameEn: 'Geometric Shapes', start: 0x25A0, end: 0x25FF },
+  { name: '杂项符号', nameEn: 'Miscellaneous Symbols', start: 0x2600, end: 0x26FF },
+  { name: 'CJK符号和标点', nameEn: 'CJK Symbols and Punctuation', start: 0x3000, end: 0x303F },
+  { name: '平假名', nameEn: 'Hiragana', start: 0x3040, end: 0x309F },
+  { name: '片假名', nameEn: 'Katakana', start: 0x30A0, end: 0x30FF },
+  { name: '谚文兼容字母', nameEn: 'Hangul Compatibility Jamo', start: 0x3130, end: 0x318F },
+  { name: '带括号CJK字母月份', nameEn: 'Enclosed CJK Letters and Months', start: 0x3200, end: 0x32FF },
+  { name: 'CJK统一表意文字', nameEn: 'CJK Unified Ideographs', start: 0x4E00, end: 0x9FFF },
+  { name: '谚文音节', nameEn: 'Hangul Syllables', start: 0xAC00, end: 0xD7AF },
+  { name: '私用区', nameEn: 'Private Use Area', start: 0xE000, end: 0xF8FF },
+  { name: '半角/全角形式', nameEn: 'Halfwidth and Fullwidth Forms', start: 0xFF00, end: 0xFFEF },
+  { name: '特殊字符', nameEn: 'Special Characters', start: 0xFFF0, end: 0xFFFF },
 ];
+
+// 根据当前语言返回分组名
+function getRangeName(range) {
+  return (lang === 'en' && range.nameEn) ? range.nameEn : range.name;
+}
 
 // ==================== State ====================
 let font = null;
@@ -75,7 +80,6 @@ const glyphInfo = $('glyph-info');
 const glyphWidthInput = $('glyph-width-input');
 const batchInfo = $('batch-info');
 const batchWidthInput = $('batch-width-input');
-const batchCount = $('batch-count');
 const batchInfoBar = $('batch-info-bar');
 const sysFontFamily = $('sys-font-family');
 const navDropdown = $('nav-dropdown');
@@ -171,13 +175,13 @@ function showToast(msg, err) {
 // ==================== Font Parsing ====================
 function handleFile(file) {
   if (!file) return;
-  if (!file.name.match(/\.fnt$/i)) { showToast('请选择 .FNT 文件', true); return; }
+  if (!file.name.match(/\.fnt$/i)) { showToast(t('toast.selectFnt'), true); return; }
   const reader = new FileReader();
   reader.onload = e => {
     try {
       parseFont(new Uint8Array(e.target.result));
-      showToast(`已加载字体 (${font.fontType})，${Object.keys(font.glyphs).length} 个字符`, false);
-    } catch (ex) { showToast('解析失败: ' + ex.message, true); }
+      showToast(t('toast.fontLoaded', { type: lang === 'zh' ? font.fontType : font.fontTypeEn, n: Object.keys(font.glyphs).length }), false);
+    } catch (ex) { showToast(t('toast.parseFailed', { msg: ex.message }), true); }
   };
   reader.readAsArrayBuffer(file);
 }
@@ -185,10 +189,10 @@ function handleFile(file) {
 function parseFont(data) {
   const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const magic = String.fromCharCode(data[0], data[1], data[2], data[3]);
-  let fontType;
-  if (magic === 'FoNt') fontType = 'RA2 非 Unicode';
-  else if (magic === 'fonT') fontType = 'RA2 Unicode';
-  else throw new Error('无效魔数: ' + magic);
+  let fontType, fontTypeEn;
+  if (magic === 'FoNt') { fontType = 'RA2 非 Unicode'; fontTypeEn = 'RA2 Non-Unicode'; }
+  else if (magic === 'fonT') { fontType = 'RA2 Unicode'; fontTypeEn = 'RA2 Unicode'; }
+  else throw new Error(t('toast.invalidMagic', { magic }));
   const isUnicode = (magic === 'fonT');
   let stride, fontDataHeight, fontHeight, symDataSize, glyphs;
 
@@ -201,7 +205,7 @@ function parseFont(data) {
     symDataSize = readU32LE(dv, 0x18);
     const expectedSymSize = 1 + stride * fontDataHeight;
     if (symDataSize !== expectedSymSize)
-      showToast(`警告: SymbolDataSize=${symDataSize}, 期望=${expectedSymSize}`, false);
+      showToast(t('toast.warnSymSize', { a: symDataSize, b: expectedSymSize }), false);
     const indexOff = 0x1C;
     const indexSize = 0x10000 * 2;
     const dataOff = indexOff + indexSize;
@@ -234,17 +238,7 @@ function parseFont(data) {
     const sharedCodes = new Set();
     for (const codes of Object.values(symToCodes))
       if (codes.length > 1) codes.forEach(c => sharedCodes.add(c));
-    font = { isUnicode, fontWidth: spaceWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, _raw: data, _sharedCodes: sharedCodes };
-    infoGrid.innerHTML = `
-      <dt>格式</dt><dd>${fontType}</dd>
-      <dt>魔数</dt><dd>${magic}</dd>
-      <dt>字符宽度</dt><dd>${fontDataHeight}</dd>
-      <dt>Stride</dt><dd>${stride} 字节</dd>
-      <dt>FontHeight</dt><dd>${fontHeight} 像素</dd>
-      <dt>唯一符号数</dt><dd>${count}</dd>
-      <dt>SymbolDataSize</dt><dd>${symDataSize}</dd>
-      <dt>已映射字符</dt><dd>${Object.keys(glyphs).length} / 0x10000</dd>
-      <dt>文件大小</dt><dd>${data.length} 字节</dd>`;
+    font = { isUnicode, fontWidth: spaceWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, fontTypeEn, _raw: data, _sharedCodes: sharedCodes, _magic: magic, _count: count };
   } else {
     const fontWidth = readU32LE(dv, 0x04);
     stride = readU32LE(dv, 0x08);
@@ -259,7 +253,7 @@ function parseFont(data) {
     const endSym = readU32LE(dv, 0x2C);
     const expectedSymSize = 1 + stride * fontDataHeight;
     if (symDataSize !== expectedSymSize)
-      showToast(`警告: SymbolDataSize=${symDataSize}, 期望=${expectedSymSize}`, false);
+      showToast(t('toast.warnSymSize', { a: symDataSize, b: expectedSymSize }), false);
     const glyphCount = endSym - startSym + 1;
     glyphs = {};
     for (let i = 0; i < glyphCount; i++) {
@@ -271,33 +265,63 @@ function parseFont(data) {
       const pixels = decodePixels(imgData, symWidth, fontDataHeight, stride);
       glyphs[code] = makeGlyph(pixels, symWidth, fontDataHeight, fontHeight);
     }
-    font = { isUnicode, fontWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, _raw: data, _startSym: startSym, _endSym: endSym };
-    infoGrid.innerHTML = `
-      <dt>格式</dt><dd>${fontType}</dd>
-      <dt>魔数</dt><dd>${magic}</dd>
-      <dt>字符宽度</dt><dd>${fontDataHeight}</dd>
-      <dt>Stride</dt><dd>${stride} 字节</dd>
-      <dt>FontHeight</dt><dd>${fontHeight} 像素</dd>
-      <dt>bppFormat</dt><dd>${dword10}</dd>
-      <dt>SymbolDataSize</dt><dd>${symDataSize}</dd>
-      <dt>字符范围</dt><dd>0x${startSym.toString(16)} - 0x${endSym.toString(16)} (共 ${glyphCount} 个)</dd>
-      <dt>文件大小</dt><dd>${data.length} 字节</dd>`;
+    font = { isUnicode, fontWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, fontTypeEn, _raw: data, _startSym: startSym, _endSym: endSym, _magic: magic, _glyphCount: glyphCount, _bpp: dword10 };
   }
+
+  renderInfoGrid();
 
   selectedCode = null;
   selectedCodes.clear();
   groupCanvasCache.clear();
   searchHighlightCode = null;
+  dirtyGlyphs.clear();
+  // 保存每个字符的原始字形快照,供"还原"按钮使用
+  font._originals = new Map();
+  for (const c of Object.keys(glyphs)) {
+    const g = glyphs[c];
+    font._originals.set(Number(c), { width: g.width, height: g.height, pixels: g.pixels.map(r => [...r]) });
+  }
   fontWidthInput.value = font.lines;
   fontHeightInput.value = font.fontHeight;
   dropzone.classList.add('dropped');
-  dropzone.textContent = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : '已加载字体';
+  dropzone.textContent = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : t('toast.loadedFont');
   leftPanel.classList.remove('no-font');
   infoContent.style.display = 'block';
   document.querySelector('#info-section .toggle-icon').textContent = '⌵';
   buildCharGroups();
   updateEditorAndRightPanel();
   renderPreview();
+  updateUndoRedoButtons();
+}
+
+// 渲染字体信息网格(文本随当前语言)
+function renderInfoGrid() {
+  if (!font) return;
+  const dt = k => `<dt>${t(k)}</dt>`;
+  const typeName = lang === 'zh' ? font.fontType : font.fontTypeEn;
+  if (font.isUnicode) {
+    infoGrid.innerHTML =
+      dt('info.format') + `<dd>${typeName}</dd>` +
+      dt('info.magic') + `<dd>${font._magic}</dd>` +
+      dt('info.charWidth') + `<dd>${font.lines}</dd>` +
+      dt('info.stride') + `<dd>${font.stride} ${t('unit.bytes')}</dd>` +
+      dt('info.fontHeight') + `<dd>${font.fontHeight} ${t('unit.pixels')}</dd>` +
+      dt('info.uniqueSymbols') + `<dd>${font._count}</dd>` +
+      dt('info.symDataSize') + `<dd>${font.symDataSize}</dd>` +
+      dt('info.mappedChars') + `<dd>${Object.keys(font.glyphs).length} / 0x10000</dd>` +
+      dt('info.fileSize') + `<dd>${font._raw.byteLength} ${t('unit.bytes')}</dd>`;
+  } else {
+    infoGrid.innerHTML =
+      dt('info.format') + `<dd>${typeName}</dd>` +
+      dt('info.magic') + `<dd>${font._magic}</dd>` +
+      dt('info.charWidth') + `<dd>${font.lines}</dd>` +
+      dt('info.stride') + `<dd>${font.stride} ${t('unit.bytes')}</dd>` +
+      dt('info.fontHeight') + `<dd>${font.fontHeight} ${t('unit.pixels')}</dd>` +
+      dt('info.bpp') + `<dd>${font._bpp}</dd>` +
+      dt('info.symDataSize') + `<dd>${font.symDataSize}</dd>` +
+      dt('info.charRange') + `<dd>0x${font._startSym.toString(16)} - 0x${font._endSym.toString(16)} ${t('info.totalCount', { n: font._glyphCount })}</dd>` +
+      dt('info.fileSize') + `<dd>${font._raw.byteLength} ${t('unit.bytes')}</dd>`;
+  }
 }
 
 // ==================== Left Panel: Character Groups ====================
@@ -326,7 +350,7 @@ function buildCharGroups() {
   if (!anyVisible) {
     const p = document.createElement('div');
     p.style.cssText = 'font-size:12px;color:#6c7086;padding:8px;';
-    p.textContent = '字体中没有可显示的字符';
+    p.textContent = t('noCharsInFont');
     charGroupList.appendChild(p);
   }
   updateBatchInfo();
@@ -349,14 +373,14 @@ function renderGroup(range, codes) {
   toggle.textContent = '❯';
   const label = document.createElement('span');
   label.className = 'label';
-  label.textContent = range.name;
+  label.textContent = getRangeName(range);
   const count = document.createElement('span');
   count.className = 'count';
   count.textContent = `${codes.length}`;
   const addBtn = document.createElement('button');
   addBtn.className = 'add-missing-btn';
   addBtn.textContent = '+';
-  addBtn.title = '添加此分组缺失的字符';
+  addBtn.title = t('group.addMissing.title');
 
   header.appendChild(check);
   header.appendChild(toggle);
@@ -367,7 +391,7 @@ function renderGroup(range, codes) {
   if (sharedCount > 0) {
     const sharedSpan = document.createElement('span');
     sharedSpan.style.cssText = 'color:#b7b;font-size:10px;margin-left:2px';
-    sharedSpan.textContent = `${sharedCount} 共享`;
+    sharedSpan.textContent = t('group.shared', { n: sharedCount });
     header.appendChild(sharedSpan);
   }
 
@@ -670,11 +694,11 @@ $('search-add-btn').addEventListener('click', () => {
   else if (/^(?:U\+|0x)[0-9a-fA-F]+$/.test(searchQ)) targetCode = parseInt(searchQ, 16);
   else if (/^\d+$/.test(searchQ)) targetCode = parseInt(searchQ, 10);
   if (targetCode === null || targetCode < 0 || targetCode > 0x10FFFF) {
-    showToast('无效的字符或编码', true);
+    showToast(t('toast.invalidChar'), true);
     return;
   }
   if (font.glyphs[targetCode]) {
-    showToast('该字符已存在', false);
+    showToast(t('toast.charExists'), false);
     selectChar(targetCode);
     return;
   }
@@ -686,7 +710,7 @@ $('search-add-btn').addEventListener('click', () => {
   if (font._sharedCodes) font._sharedCodes.delete(targetCode);
   rebuildCharGroups();
   selectChar(targetCode);
-  showToast(`已添加 U+${targetCode.toString(16).padStart(4, '0')}`, false);
+  showToast(t('toast.charAdded', { code: targetCode.toString(16).padStart(4, '0') }), false);
 });
 
 function addSearchHighlight(code) {
@@ -761,6 +785,8 @@ function selectChar(code) {
   if (!font || !font.glyphs[code]) return;
   prepareGlyphEdit(code);
   const prevSelected = selectedCode;
+  // 切换字符前同步未刷新的编辑(自动刷新开关开启时)
+  if (autoRefresh) flushDirtyGlyphs();
   if (code === selectedCode) {
     selectedCode = null;
   } else {
@@ -777,6 +803,7 @@ function selectChar(code) {
   refreshSelectionVisuals([prevSelected, selectedCode]);
   updateEditorAndRightPanel();
   updateBatchInfo();
+  updateUndoRedoButtons();
 }
 
 // 重绘指定字符所属分组的选区覆盖层画布
@@ -850,7 +877,8 @@ function getGroupForCode(code) {
 
 // 只重绘受影响字符的格子,不重建左侧字符列表 DOM/全部画布。
 // 用于字形内容发生变化但列表结构(分组、数量、布局)不变的场景(如系统字体转换)。
-function redrawGlyphCells(codes) {
+// skipSelection=true 时跳过选区覆盖层重绘(编辑画笔高频调用时避免整组 selection 重绘开销)。
+function redrawGlyphCells(codes, skipSelection = false) {
   const changed = new Set(codes);
   const affectedStarts = new Set();
   for (const code of changed) {
@@ -891,7 +919,7 @@ function redrawGlyphCells(codes) {
       }
     }
     // 重绘该分组选区覆盖层(选中高亮)
-    if (canvas._selCanvas) drawGroupSelection(canvas);
+    if (canvas._selCanvas && !skipSelection) drawGroupSelection(canvas);
   }
 }
 
@@ -900,6 +928,120 @@ function updateEditorAndRightPanel() {
   updateGlyphInfo();
 }
 
+// ==================== Undo / Redo / Restore ====================
+// 每个字形独立维护撤销/重做栈,快照为修改前的 width 与像素深拷贝
+function glyphSnapshot(g) {
+  return { width: g.width, pixels: g.pixels.map(row => [...row]) };
+}
+
+function pushGlyphUndo(code) {
+  const g = font.glyphs[code];
+  if (!g) return;
+  if (!g._undo) g._undo = [];
+  if (!g._redo) g._redo = [];
+  const s = glyphSnapshot(g);
+  const top = g._undo[g._undo.length - 1];
+  // 与栈顶相同(内容无实际变化)时不重复入栈
+  if (top && top.width === s.width) {
+    let same = true;
+    for (let y = 0; y < top.pixels.length && same; y++) {
+      const a = top.pixels[y], b = s.pixels[y];
+      for (let x = 0; x < a.length && same; x++) {
+        if (a[x] !== b[x]) same = false;
+      }
+    }
+    if (same) return;
+  }
+  g._undo.push(s);
+  g._redo.length = 0;
+  updateUndoRedoButtons();
+}
+
+// 将字形覆盖为快照内容(仅像素与宽度;高度固定不变)
+function restoreGlyphFromSnapshot(code, snap) {
+  const g = font.glyphs[code];
+  if (!g) return;
+  g.width = snap.width;
+  g.pixels = snap.pixels.map(row => [...row]);
+}
+
+// 撤销/重做/还原等显式操作后的统一刷新
+function afterGlyphEdit(code) {
+  updateGlyphInfo();
+  renderEditor();
+  renderPreview();
+  redrawGlyphCells([code]);
+  updateUndoRedoButtons();
+}
+
+function undoEdit() {
+  if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
+  const g = font.glyphs[selectedCode];
+  if (!g._undo || g._undo.length === 0) { showToast(t('toast.noUndo'), false); return; }
+  g._redo = g._redo || [];
+  g._redo.push(glyphSnapshot(g));
+  restoreGlyphFromSnapshot(selectedCode, g._undo.pop());
+  afterGlyphEdit(selectedCode);
+  showToast(t('toast.undone'), false);
+}
+
+function redoEdit() {
+  if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
+  const g = font.glyphs[selectedCode];
+  if (!g._redo || g._redo.length === 0) { showToast(t('toast.noRedo'), false); return; }
+  g._undo = g._undo || [];
+  g._undo.push(glyphSnapshot(g));
+  restoreGlyphFromSnapshot(selectedCode, g._redo.pop());
+  afterGlyphEdit(selectedCode);
+  showToast(t('toast.redone'), false);
+}
+
+// 还原当前字符为加载字体时的原始字形
+function restoreGlyph() {
+  if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
+  if (!font._originals || !font._originals.has(selectedCode)) { showToast(t('toast.noRestoreData'), true); return; }
+  pushGlyphUndo(selectedCode);
+  restoreGlyphFromSnapshot(selectedCode, font._originals.get(selectedCode));
+  afterGlyphEdit(selectedCode);
+  showToast(t('toast.restored'), false);
+}
+
+function updateUndoRedoButtons() {
+  const g = font && selectedCode ? font.glyphs[selectedCode] : null;
+  const rs = $('restore-btn');
+  if (rs) rs.disabled = !g || !font._originals || !font._originals.has(selectedCode);
+}
+
+$('restore-btn').addEventListener('click', restoreGlyph);
+
+// Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做(输入框内不拦截)
+document.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); undoEdit(); }
+  else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redoEdit(); }
+});
+
+// ==================== Auto Refresh ====================
+// 自动刷新开关:开启时编辑后同步刷新左侧字符列表对应格子;关闭时只刷新编辑器本身,
+// 避免 CJK 等大字符集下每次编辑都操作左侧列表导致卡顿。
+let autoRefresh = true;
+// 已编辑但尚未刷新的字符(编辑画笔时累积,笔画结束/切换字符时刷新一次)
+const dirtyGlyphs = new Set();
+
+// 切换字符时统一同步左侧列表;关闭自动刷新期间保留 dirty,重新开启时一并刷新
+function flushDirtyGlyphs() {
+  if (!autoRefresh || dirtyGlyphs.size === 0) return;
+  redrawGlyphCells([...dirtyGlyphs], true);
+  dirtyGlyphs.clear();
+}
+
+$('auto-refresh-toggle').addEventListener('change', function() {
+  autoRefresh = this.checked;
+  if (autoRefresh) flushDirtyGlyphs();
+});
+
 function updateGlyphInfo() {
   const charPreview = $('glyph-char-preview');
   const charDisplay = $('glyph-char-display');
@@ -907,7 +1049,7 @@ function updateGlyphInfo() {
   const charDetail = $('glyph-char-detail');
   const convBtns = $('sys-convert-btns');
   if (!font || !selectedCode || !font.glyphs[selectedCode]) {
-    glyphInfo.textContent = '请选择一个字符';
+    glyphInfo.textContent = t('glyph.selectChar');
     glyphWidthInput.value = '';
     if (charPreview) charPreview.style.display = 'none';
     if (convBtns) convBtns.style.display = 'none';
@@ -919,7 +1061,7 @@ function updateGlyphInfo() {
   glyphWidthInput.value = g.width;
   if (charHeader) charHeader.textContent = `U+${selectedCode.toString(16).padStart(4, '0')}`;
   if (charDetail) {
-    charDetail.innerHTML = `<div>宽度: ${g.width}</div><div>高度: ${g.height}</div>`;
+    charDetail.innerHTML = `<div>${t('glyph.width', { n: g.width })}</div><div>${t('glyph.height', { n: g.height })}</div>`;
   }
   if (charPreview && charDisplay) {
     try {
@@ -936,7 +1078,7 @@ function updateBatchInfo() {
   const count = selectedCodes.size;
   if (count > 0) {
     batchInfoBar.style.display = 'block';
-    batchCount.textContent = count;
+    batchInfoBar.innerHTML = t('batch.selected', { n: count });
   } else {
     batchInfoBar.style.display = 'none';
   }
@@ -1170,6 +1312,8 @@ window.addEventListener('resize', () => { renderRulers(); renderGuides(); });
 // Editor mouse interaction
 let editorDrawing = false;
 let editorErasing = false;
+// 一次鼠标按下到抬起(一笔)只记录一次撤销快照
+let strokeUndoPushed = false;
 
 // 画笔状态:大小为覆盖的正方形边长,brushHover 记录当前悬停格点用于预览
 let brushSize = 1;
@@ -1183,10 +1327,13 @@ function getBrushRange(cx, cy) {
 }
 
 // 设置画笔大小并刷新预览与工具栏显示
+function updateBrushSizeLabel() {
+  const label = $('brush-size-label');
+  if (label) label.textContent = t('brushLabel', { n: brushSize });
+}
 function setBrushSize(n) {
   brushSize = Math.max(1, Math.min(MAX_BRUSH, n));
-  const label = $('brush-size-label');
-  if (label) label.textContent = '画笔: ' + brushSize;
+  updateBrushSizeLabel();
   renderEditor();
 }
 
@@ -1250,10 +1397,18 @@ editorCanvas.addEventListener('mousemove', e => {
   editorSetPixel(e);
 });
 
-const editorMouseUpHandler = () => { editorDrawing = false; };
+const editorMouseUpHandler = () => {
+  editorDrawing = false;
+  strokeUndoPushed = false;
+};
 document.addEventListener('mouseup', editorMouseUpHandler);
 
-editorCanvas.addEventListener('mouseleave', () => { editorDrawing = false; brushHover = null; renderEditor(); });
+editorCanvas.addEventListener('mouseleave', () => {
+  editorDrawing = false;
+  strokeUndoPushed = false;
+  brushHover = null;
+  renderEditor();
+});
 
 function editorSetPixel(e) {
   const g = font.glyphs[selectedCode];
@@ -1267,13 +1422,22 @@ function editorSetPixel(e) {
   prepareGlyphEdit(selectedCode);
   const gg = font.glyphs[selectedCode];
   const { x0, y0, x1, y1 } = getBrushRange(px, py);
+  // 记录本笔画开始前的状态(一次按下到抬起只入栈一次;内容无变化时自动去重)
+  if (!strokeUndoPushed) {
+    pushGlyphUndo(selectedCode);
+    strokeUndoPushed = true;
+  }
+  let changed = false;
   // 画笔覆盖的所有格子(裁剪到字形范围内)
   for (let y = Math.max(0, y0); y <= Math.min(gg.height - 1, y1); y++) {
     for (let x = Math.max(0, x0); x <= Math.min(gg.width - 1, x1); x++) {
+      if (gg.pixels[y][x] !== (editorErasing ? 0 : 1)) changed = true;
       gg.pixels[y][x] = editorErasing ? 0 : 1;
     }
   }
   renderEditor();
+  // 记录该字符已编辑;仅在切换字符时(自动刷新开启)统一同步左侧列表格子
+  if (changed) dirtyGlyphs.add(selectedCode);
 }
 
 // ==================== Ruler Guides (Create/Move/Remove) ====================
@@ -1359,7 +1523,7 @@ function removeGuideAt(e, orientation) {
   if (existing) {
     guides = guides.filter(g => g !== existing);
     renderEditor();
-    showToast('已移除辅助线', false);
+    showToast(t('toast.guideRemoved'), false);
   }
 }
 
@@ -1398,6 +1562,7 @@ document.addEventListener('mouseup', e => {
 function moveGlyphContent(dx, dy) {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
   prepareGlyphEdit(selectedCode);
+  pushGlyphUndo(selectedCode);
   const g = font.glyphs[selectedCode];
   const newPixels = [];
   for (let y = 0; y < g.height; y++) {
@@ -1414,8 +1579,7 @@ function moveGlyphContent(dx, dy) {
     }
   }
   g.pixels = newPixels;
-  renderEditor();
-  renderPreview();
+  afterGlyphEdit(selectedCode);
 }
 
 function centerGlyphContent() {
@@ -1431,6 +1595,7 @@ function centerGlyphContent() {
   if (left > right) return;
   const shift = Math.floor((g.width - (right - left + 1)) / 2) - left;
   if (shift === 0) return;
+  pushGlyphUndo(selectedCode);
   const newPixels = [];
   for (let y = 0; y < g.height; y++) {
     const row = new Array(g.width).fill(0);
@@ -1443,8 +1608,7 @@ function centerGlyphContent() {
     newPixels.push(row);
   }
   g.pixels = newPixels;
-  renderEditor();
-  renderPreview();
+  afterGlyphEdit(selectedCode);
 }
 
 // ==================== Preview ====================
@@ -1512,6 +1676,7 @@ $('apply-width').addEventListener('click', () => {
   if (isNaN(newW) || newW < 1 || newW > 255) return;
   const g = font.glyphs[selectedCode];
   if (newW === g.width) return;
+  pushGlyphUndo(selectedCode);
   const newPixels = [];
   for (let y = 0; y < g.height; y++) {
     const row = new Array(newW).fill(0);
@@ -1522,10 +1687,7 @@ $('apply-width').addEventListener('click', () => {
   }
   g.pixels = newPixels;
   g.width = newW;
-  updateGlyphInfo();
-  renderEditor();
-  renderPreview();
-  rebuildCharGroups();
+  afterGlyphEdit(selectedCode);
 });
 
 // Move buttons
@@ -1551,16 +1713,16 @@ $('ruler-toggle').addEventListener('change', function() {
 updateRulerUI();
 
 $('clear-guides').addEventListener('click', () => {
-  if (guides.length === 0) { showToast('没有辅助线', false); return; }
+  if (guides.length === 0) { showToast(t('toast.noGuides'), false); return; }
   guides = [];
   renderEditor();
-  showToast('已清除所有辅助线', false);
+  showToast(t('toast.guidesCleared'), false);
 });
 
 // ==================== Batch Move ====================
 function batchMoveContent(dx, dy) {
   const codes = getBatchEditCodes();
-  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
+  if (codes.length === 0) { showToast(t('toast.noChars'), true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
     if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
@@ -1581,7 +1743,7 @@ function batchMoveContent(dx, dy) {
     }
     g.pixels = newPixels;
   }
-  showToast(`已移动 ${codes.length} 个字符`, false);
+  showToast(t('toast.moved', { n: codes.length }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -1591,14 +1753,12 @@ $('batch-move-up').addEventListener('click', () => batchMoveContent(0, -1));
 $('batch-move-down').addEventListener('click', () => batchMoveContent(0, 1));
 
 // ==================== Separate Shared Toggle ====================
-$('separate-shared').addEventListener('change', function() {
-  const label = this.closest('label');
-  if (label) {
-    label.title = this.checked
-      ? '开启：分离数据，单个/批量操作均先分配新数据空间再修改'
-      : '关闭：跳过共享字符，批量操作不修改共用数据的字符';
-  }
-});
+function updateSeparateSharedTitle() {
+  const el = $('separate-shared');
+  const label = el && el.closest('label');
+  if (label) label.title = el.checked ? t('conv.separate.title.on') : t('conv.separate.title.off');
+}
+$('separate-shared').addEventListener('change', updateSeparateSharedTitle);
 
 // ==================== Batch Operations ====================
 function getSelectedGlyphCodes() {
@@ -1607,7 +1767,7 @@ function getSelectedGlyphCodes() {
 
 function batchSetWidth(newWidth) {
   const codes = getBatchEditCodes();
-  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
+  if (codes.length === 0) { showToast(t('toast.noChars'), true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
     if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
@@ -1631,7 +1791,7 @@ function batchSetWidth(newWidth) {
     g.pixels = newPixels;
     g.width = newWidth;
   }
-  showToast(`已批量设置 ${codes.filter(c => font.glyphs[c].width === newWidth).length} 个字符宽度为 ${newWidth}`, false);
+  showToast(t('toast.batchWidth', { n: codes.filter(c => font.glyphs[c].width === newWidth).length, w: newWidth }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -1639,7 +1799,7 @@ function batchSetWidth(newWidth) {
 
 function batchCenter() {
   const codes = getBatchEditCodes();
-  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
+  if (codes.length === 0) { showToast(t('toast.noChars'), true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
     if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
@@ -1666,7 +1826,7 @@ function batchCenter() {
     }
     g.pixels = newPixels;
   }
-  showToast(`已居中 ${codes.length} 个字符`, false);
+  showToast(t('toast.centered', { n: codes.length }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -1674,7 +1834,7 @@ function batchCenter() {
 
 function batchClearAll() {
   const codes = getBatchEditCodes();
-  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
+  if (codes.length === 0) { showToast(t('toast.noChars'), true); return; }
   for (const code of codes) detachGlyph(code);
   for (const code of codes) {
     if (!shouldSeparate() && font._sharedCodes && font._sharedCodes.has(code)) continue;
@@ -1683,7 +1843,7 @@ function batchClearAll() {
       for (let x = 0; x < g.width; x++)
         g.pixels[y][x] = 0;
   }
-  showToast(`已清除 ${codes.length} 个字符`, false);
+  showToast(t('toast.cleared', { n: codes.length }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -1871,6 +2031,7 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
 function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
   if (!font || !font.glyphs[code]) return false;
   prepareGlyphEdit(code);
+  pushGlyphUndo(code);
   const fs = getRenderFontSize();
   const maxW = fs;
   const maxH = fs;
@@ -1902,18 +2063,18 @@ function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
 
 $('sys-font-convert').addEventListener('click', () => {
   const family = sysFontFamily.value.trim();
-  if (!family) { showToast('请输入系统字体名称', true); return; }
+  if (!family) { showToast(t('toast.enterFont'), true); return; }
   let codes = getSelectedGlyphCodes();
   if (codes.length === 0 && selectedCode) codes = [selectedCode];
-  if (codes.length === 0) { showToast('请先选择字符', true); return; }
+  if (codes.length === 0) { showToast(t('toast.selectCharsFirst'), true); return; }
   if (!shouldSeparate() && font._sharedCodes && codes.length > 1) codes = codes.filter(c => !font._sharedCodes.has(c));
-  if (codes.length === 0) { showToast('没有可操作的字符（共享字符已跳过）', true); return; }
+  if (codes.length === 0) { showToast(t('toast.sharedSkipped'), true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
   const converted = [];
   for (const code of codes) {
     if (convertGlyphFromSystemFont(code, family, threshold)) converted.push(code);
   }
-  showToast(`已转换 ${converted.length} 个字符为系统字体 "${family}"`, false);
+  showToast(t('toast.converted', { n: converted.length, family }), false);
   updateEditorAndRightPanel();
   renderPreview();
   // 只重绘受影响字符的格子,避免整棵字符列表重建(转换不会改变列表结构)
@@ -1922,16 +2083,16 @@ $('sys-font-convert').addEventListener('click', () => {
 
 $('sys-font-convert-all').addEventListener('click', () => {
   const family = sysFontFamily.value.trim();
-  if (!family) { showToast('请输入系统字体名称', true); return; }
+  if (!family) { showToast(t('toast.enterFont'), true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
   const allCodes = Object.keys(font.glyphs).map(Number);
   const codes = getBatchEditCodesFromAll(allCodes);
-  if (codes.length === 0) { showToast('没有可操作的字符', true); return; }
+  if (codes.length === 0) { showToast(t('toast.noChars'), true); return; }
   let count = 0;
   for (const code of codes) {
     if (convertGlyphFromSystemFont(code, family, threshold)) count++;
   }
-  showToast(`已转换全部 ${count} 个字符为系统字体 "${family}"`, false);
+  showToast(t('toast.convertedAll', { n: count, family }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -1941,13 +2102,13 @@ $('sys-font-convert-all').addEventListener('click', () => {
 function openAddMissingModal(range) {
   if (!font) return;
   const family = sysFontFamily.value.trim();
-  if (!family) { showToast('请先选择系统字体', true); return; }
+  if (!family) { showToast(t('toast.selectSysFont'), true); return; }
 
   const missing = [];
   for (let code = range.start; code <= range.end; code++) {
     if (!font.glyphs[code]) missing.push(code);
   }
-  if (missing.length === 0) { showToast('此分组没有缺失字符', false); return; }
+  if (missing.length === 0) { showToast(t('toast.noMissing'), false); return; }
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
@@ -1959,7 +2120,7 @@ function openAddMissingModal(range) {
   header.className = 'modal-header';
   const title = document.createElement('span');
   title.className = 'modal-title';
-  title.textContent = `添加缺失字符 — ${range.name} (共 ${missing.length} 个)`;
+  title.textContent = t('modal.addMissingTitle', { name: getRangeName(range), n: missing.length });
   const closeBtn = document.createElement('button');
   closeBtn.className = 'modal-close';
   closeBtn.textContent = '×';
@@ -1995,7 +2156,7 @@ function openAddMissingModal(range) {
   if (missing.length > 1000) {
     const note = document.createElement('div');
     note.style.cssText = 'width:100%;font-size:11px;color:#6c7086;text-align:center;padding:4px;';
-    note.textContent = `... 还有 ${missing.length - 1000} 个字符未显示`;
+    note.textContent = t('modal.moreChars', { n: missing.length - 1000 });
     body.appendChild(note);
   }
 
@@ -2003,13 +2164,13 @@ function openAddMissingModal(range) {
   footer.className = 'modal-footer';
   const addBtn = document.createElement('button');
   addBtn.className = 'primary';
-  addBtn.textContent = '添加选中';
+  addBtn.textContent = t('modal.addSelected');
   const toggleAllBtn = document.createElement('button');
-  toggleAllBtn.textContent = '全选';
+  toggleAllBtn.textContent = t('modal.selectAll');
   let allSelected = false;
   toggleAllBtn.addEventListener('click', () => {
     allSelected = !allSelected;
-    toggleAllBtn.textContent = allSelected ? '取消全选' : '全选';
+    toggleAllBtn.textContent = allSelected ? t('modal.deselectAll') : t('modal.selectAll');
     for (const { el, code } of allItems) {
       el.classList.toggle('checked', allSelected);
       if (allSelected) selectedSet.add(code);
@@ -2017,7 +2178,7 @@ function openAddMissingModal(range) {
     }
   });
   const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = '取消';
+  cancelBtn.textContent = t('modal.cancel');
   footer.appendChild(cancelBtn);
   footer.appendChild(toggleAllBtn);
   footer.appendChild(addBtn);
@@ -2056,7 +2217,7 @@ function openAddMissingModal(range) {
       font.glyphs[code] = { width: result.width, height: font.fontHeight, pixels: pix };
       added++;
     }
-    showToast(`已添加 ${added} 个字符`, false);
+    showToast(t('toast.added', { n: added }), false);
     close();
     rebuildCharGroups();
     renderPreview();
@@ -2185,7 +2346,7 @@ function downloadBuffer(buf, filename) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
-  showToast(`已保存为 ${filename}`, false);
+  showToast(t('toast.savedAs', { name: filename }), false);
 }
 
 $('save-btn').addEventListener('click', saveFont);
@@ -2256,7 +2417,7 @@ $('apply-font-size').addEventListener('click', () => {
     font.fontHeight = newH;
   }
 
-  showToast(`字体尺寸已更新: ${newW}×${newH}`, false);
+  showToast(t('toast.fontSizeUpdated', { w: newW, h: newH }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -2267,7 +2428,7 @@ function populateNavDropdown() {
   navDropdown.style.display = font ? 'block' : 'none';
   if (!font) return;
   const val = navDropdown.value;
-  navDropdown.innerHTML = '<option value="">— 快速定位到分组 —</option>';
+  navDropdown.innerHTML = `<option value="">${t('nav.jumpGroup')}</option>`;
   charGroupList.querySelectorAll('.char-group').forEach(g => {
     const label = g.querySelector('.label');
     if (!label) return;
@@ -2361,14 +2522,14 @@ function populateFontPicker() {
   if (systemFonts.length === 0) {
     const item = document.createElement('div');
     item.className = 'font-picker-status';
-    item.textContent = '正在加载字体列表...';
+    item.textContent = t('fonts.loading');
     list.appendChild(item);
     return;
   }
   for (const name of systemFonts) {
     const item = document.createElement('div');
     item.className = 'font-picker-item';
-    const cn = FONT_CN_NAMES[name];
+    const cn = lang === 'zh' ? FONT_CN_NAMES[name] : null;
     const label = cn ? `${cn} — ${name}` : name;
     item.innerHTML = cn
       ? `<span class="cn-name">${cn}</span><br><span class="english-name">${name}</span>`
@@ -2546,7 +2707,7 @@ $('sc-tc-toggle').addEventListener('change', renderPreview);
 // Copy editor canvas to clipboard at original resolution
 $('copy-to-clipboard').addEventListener('click', () => {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) {
-    showToast('请先选择字符', true);
+    showToast(t('toast.selectCharsFirst'), true);
     return;
   }
   const g = font.glyphs[selectedCode];
@@ -2561,33 +2722,32 @@ $('copy-to-clipboard').addEventListener('click', () => {
       if (g.pixels[y] && g.pixels[y][x]) ctx.fillRect(x, y, 1, 1);
   off.toBlob(blob => {
     navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      .then(() => showToast('已复制到剪切板'))
-      .catch(() => showToast('复制失败', true));
+      .then(() => showToast(t('toast.copied')))
+      .catch(() => showToast(t('toast.copyFailed'), true));
   });
 });
 
 // Clear editor canvas
 $('clear-editor').addEventListener('click', () => {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) {
-    showToast('请先选择字符', true);
+    showToast(t('toast.selectCharsFirst'), true);
     return;
   }
   prepareGlyphEdit(selectedCode);
+  pushGlyphUndo(selectedCode);
   const g = font.glyphs[selectedCode];
   for (let y = 0; y < g.height; y++)
     for (let x = 0; x < g.width; x++)
       g.pixels[y][x] = 0;
-  renderEditor();
-  renderPreview();
-  rebuildCharGroups();
-  showToast('已清空画布');
+  afterGlyphEdit(selectedCode);
+  showToast(t('toast.canvasCleared'));
 });
 
 // Refresh character list
 $('refresh-char-list').addEventListener('click', () => {
   if (!font) return;
   rebuildCharGroups();
-  showToast('列表已刷新');
+  showToast(t('toast.listRefreshed'));
 });
 
 // User guide
@@ -2624,14 +2784,14 @@ function handleFontFileDrop(file) {
           systemFonts.unshift(fontName);
           sysFontFamily.value = fontName;
           sysFontFamily.dispatchEvent(new Event('input', { bubbles: true }));
-          showToast(`已加载自定义字体: ${file.name}`, false);
+          showToast(t('toast.customFontLoaded', { name: file.name }), false);
         }
-      }).catch(() => showToast('字体加载失败', true));
+      }).catch(() => showToast(t('toast.fontLoadFailed'), true));
     };
     reader.readAsArrayBuffer(file);
     return;
   }
-  showToast('不支持的字体格式', true);
+  showToast(t('toast.unsupportedFont'), true);
 }
 
 if (rightPanel && rightDropHint) {
@@ -2677,7 +2837,7 @@ function renderConvPreview() {
   const fineY = getFineY();
   const converted = renderSystemFontChar(ch, family, maxW, maxH, threshold, vertOffset, fontStyle, fineX, fineY);
 
-  $('conv-label-before').textContent = '原始-' + g.width;
+  $('conv-label-before').textContent = t('conv.originalLabel', { n: g.width });
 
   const scale = 4;
   const pvW = 65;
@@ -2831,7 +2991,7 @@ function renderConvPreview() {
   // After canvas (thresholded conversion)
   const ca = $('conv-preview-after');
   if (converted) {
-    $('conv-label-after').textContent = '转换-' + converted.width;
+    $('conv-label-after').textContent = t('conv.convertedLabel', { n: converted.width });
     ca.width = pvW; ca.height = pvH;
     const actx = ca.getContext('2d');
     actx.fillStyle = '#212121'; actx.fillRect(0, 0, ca.width, ca.height);
@@ -2970,8 +3130,8 @@ $('preview-popup-btn').addEventListener('click', () => {
   label.style.cssText = 'font-size:12px;color:#cdd6f4';
   label.textContent = `${scale}×`;
   const close = document.createElement('button');
-  close.textContent = '关闭';
-  bar.appendChild(document.createTextNode('缩放 '));
+  close.textContent = t('popup.close');
+  bar.appendChild(document.createTextNode(t('popup.zoom')));
   bar.appendChild(slider);
   bar.appendChild(label);
   bar.appendChild(close);
@@ -2995,3 +3155,26 @@ $('preview-popup-btn').addEventListener('click', () => {
   overlay.appendChild(bar);
   document.body.appendChild(overlay);
 });
+
+// ==================== Language Change Hook ====================
+// 语言切换时重新渲染所有动态生成的内容
+window.onLanguageChange = () => {
+  updateBrushSizeLabel();
+  updateSeparateSharedTitle();
+  if (font) {
+    renderInfoGrid();
+    rebuildCharGroups();
+    populateNavDropdown();
+    updateGlyphInfo();
+    updateBatchInfo();
+    renderConvPreview();
+    if (selectedCode !== null) {
+      const range = getGroupForCode(selectedCode);
+      if (range) {
+        const el = charGroupList.querySelector(`.char-group[data-range-start="${range.start}"] .char-group-header`);
+        if (el) el.classList.add('active');
+      }
+    }
+  }
+  if (systemFonts.length > 0) populateFontPicker();
+};

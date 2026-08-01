@@ -6,6 +6,10 @@ body {
   overflow: hidden;
 }
 h1 { font-size: 16px; margin: 2px 5px; color: #FFF300; flex-shrink: 0; margin-bottom: 4px; display: flex; align-items: center; }
+#lang-toggle {
+  margin-left: auto; 
+  cursor: pointer; font-size: 12px;
+}
 h2 { font-size: 14px; margin: 2px 0 4px; flex-shrink: 0; }
 h3 { font-size: 12px; margin: 2px 0 4px; flex-shrink: 0; }
 
@@ -44,7 +48,7 @@ h3 { font-size: 12px; margin: 2px 0 4px; flex-shrink: 0; }
 .left-panel.no-font #info-grid,
 .left-panel.no-font .font-size-editor,
 .left-panel.no-font #save-btn,
-.left-panel.no-font .char-list-heading { display: none; }
+.left-panel.no-font .char-list-header { display: none; }
 
 
 #dropzone {
@@ -122,6 +126,18 @@ button.primary:hover { background: #b3b; }
 }
 .section-toggle:hover { color: #b7b; }
 .section-toggle .toggle-icon { font-size: 10px;}
+
+/* 字符列表标题行:标题、已选信息、刷新按钮保持在同一行 */
+.char-list-header {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.char-list-header h2 {
+  margin: 0; white-space: nowrap;
+}
+/* 刷新按钮固定居右,避免"已选 N 个字符"信息条的显示/隐藏使其位置跳变 */
+.char-list-header #refresh-char-list {
+  margin-left: auto;
+}
 
 /* Editor header row */
 .editor-header-row {
@@ -214,7 +230,7 @@ button.primary:hover { background: #b3b; }
 .toolbar {
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex-shrink: 0;
 }
-.toolbar label { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 4px; }
+.toolbar label { font-size: 13px; color: #eee; display: flex; align-items: center; gap: 4px; }
 
 /* Preview */
 .preview-area { flex-shrink: 0; }
@@ -393,6 +409,6 @@ cursor: pointer;
   display: flex; gap: 10px; align-items: center;
 }
 
-#ruler-toggle{
+#ruler-toggle, #auto-refresh-toggle{
 accent-color: #aa51aa;
 }
