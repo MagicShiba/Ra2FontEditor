@@ -16,7 +16,7 @@
 <div class="app-layout" id="app-layout">
 
   <!-- ===== LEFT PANEL ===== -->
-  <div class="panel left-panel">
+  <div class="panel left-panel no-font" id="left-panel">
     <div id="info-section">
       <h2 class="section-toggle" data-target="info-content">字体信息 <span class="toggle-icon">⌵</span></h2>
       <div id="info-content">
@@ -26,7 +26,7 @@
       <input type="file" id="file-input" accept=".fnt,.FNT" style="display:none">
     </div>
         <div class="info-grid" id="info-grid"></div>
-        <div class="field-row" style="margin-top:4px">
+        <div class="field-row font-size-editor" style="margin-top:4px">
           <label title="Ideograph Width（来自字体文件头）">宽度 <input type="number" id="font-width-input" min="1" max="255"></label>
           <label>高度 <input type="number" id="font-height-input" min="1" max="255"></label>
           <button id="apply-font-size" title="全局字体画布大小，具体宽度由每个字单独指定，谨慎修改。">应用</button>
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <h2>字符列表</h2>
+    <h2 class="char-list-heading">字符列表</h2>
     <div class="search-row" style="display:none">
       <select id="nav-dropdown" style="display:none">
         <option value="">— 快速定位 —</option>
@@ -56,7 +56,8 @@
       <h2>编辑器</h2>
       <div class="toolbar">
         <label>缩放 <input type="range" id="editor-zoom" min="2" max="32" step="1" value="10"></label>
-        <label title="显示/隐藏标尺,拖动获得辅助线"><input type="checkbox" id="ruler-toggle" checked>标尺</label>
+        <label id="brush-size-label" title="画笔大小,在编辑画布上按 + / - 或 [ / ] 调整">画笔: 1</label>
+        <label title="显示/隐藏标尺。左键点击标尺创建辅助线,拖动可移动,右键点击辅助线移除"><input type="checkbox" id="ruler-toggle" checked>标尺</label>
         <button id="clear-guides" title="清除所有辅助线">清辅助线</button>
         <button id="clear-editor" title="清空画布">清空画布</button>
         <button id="copy-to-clipboard" title="复制原始分辨率图像到剪切板">复制图像</button>
@@ -212,8 +213,8 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
           <span>阈值</span><input type="range" id="conv-threshold" min="0" max="255" value="128"><span id="conv-threshold-val" style="font-size:12px;min-width:26px">128</span>
           <span>字号</span><input type="range" id="conv-font-size" min="10" max="22" step="1" value="16"><span id="conv-font-size-val" style="font-size:12px;min-width:16px">15</span>
           <span>垂直偏移</span><input type="range" id="conv-vert-offset" min="-10" max="10" value="0" step="1"><span id="conv-vert-offset-val" style="font-size:12px;min-width:16px">0</span>
-<span>微调X</span><input type="range" id="conv-fine-x" min="-1" max="1" value="0" step="0.1" title="微调x轴像素坐标,改进渲染"><span id="conv-fine-x-val" style="font-size:12px;min-width:16px">0.0</span>
-<span>微调Y</span><input type="range" id="conv-fine-y" min="-1" max="1" value="0" step="0.1" title="微调y轴像素坐标,没什么用,目前html渲染如此"><span id="conv-fine-y-val" style="font-size:12px;min-width:16px">0.0</span>
+<span>微调X</span><input type="range" id="conv-fine-x" min="-1" max="1" value="0" step="0.1" title="微调x轴像素坐标;由于字形宽度按内容自动裁剪,水平偏移通常会被裁剪抵消"><span id="conv-fine-x-val" style="font-size:12px;min-width:16px">0.0</span>
+<span>微调Y</span><input type="range" id="conv-fine-y" min="-1" max="1" value="0" step="0.1" title="微调y轴像素坐标;整数部分为输出格位移,小数部分以位图像素插值实现亚像素偏移(浏览器对绘制坐标取整,亚像素需靠插值完成)"><span id="conv-fine-y-val" style="font-size:12px;min-width:16px">0.0</span>
         </div>
         <div class="field-row" style="margin-top:4px">
           <label class="sc-tc-toggle" title="开启：分离数据，单个/批量操作均先分配新数据空间再修改">
@@ -257,6 +258,12 @@ THE QUICK BROWN FOX JUMPS OVER A LAZY DOG.
 - 鼠标滚轮：缩放编辑区
 - 鼠标左键：绘制像素
 - 鼠标右键：擦除像素
+- 按 + / - 或 [ / ]：调整画笔大小,悬停时高亮显示画笔影响的格子
+
+辅助线：
+- 左键点击顶部/左侧标尺：创建辅助线
+- 左键按住标尺上的辅助线拖动：移动辅助线
+- 右键点击标尺上的辅助线：移除辅助线
 
 工具github地址：
 <a href="https://github.com/MagicShiba/Ra2FontEditor" style="color: #ed0;"> https://github.com/MagicShiba/Ra2FontEditor </a>

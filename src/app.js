@@ -56,6 +56,7 @@ let rulerDragging = null;
 const $ = id => document.getElementById(id);
 const dropzone = $('dropzone');
 const fileInput = $('file-input');
+const leftPanel = $('left-panel');
 const infoContent = $('info-content');
 const infoGrid = $('info-grid');
 const fontWidthInput = $('font-width-input');
@@ -291,6 +292,7 @@ function parseFont(data) {
   fontHeightInput.value = font.fontHeight;
   dropzone.classList.add('dropped');
   dropzone.textContent = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : '已加载字体';
+  leftPanel.classList.remove('no-font');
   infoContent.style.display = 'block';
   document.querySelector('#info-section .toggle-icon').textContent = '⌵';
   buildCharGroups();
@@ -399,22 +401,15 @@ function renderGroup(range, codes) {
     const bx = col * cellW + 1;
     const by = row * cellH + 1;
 
-    // Highlight if selected
-    if (code === selectedCode) {
-      ctx.fillStyle = '#7777';
-      ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
-    }
-    if (code !== selectedCode && selectedCodes.has(code)) {
-      ctx.fillStyle = '#7777';
-      ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
-    }
-
-    // Draw pixels
+    // 选中高亮由选区覆盖层绘制,不再写入字符画布,避免选择变化时重绘全部画布
+    // Draw pixels(字符在格子内居中,窄字符不再靠左)
     ctx.fillStyle = fgColorVal;
+    const cx = Math.max(0, Math.floor((cellW - 2 - g.width) / 2));
+    const cy = Math.max(0, Math.floor((cellH - 2 - g.height) / 2));
     for (let y = 0; y < g.height && y < cellH - 2; y++) {
       for (let x = 0; x < g.width && x < cellW - 2; x++) {
         if (g.pixels[y] && g.pixels[y][x]) {
-          ctx.fillRect(bx + x, by + y, 1, 1);
+          ctx.fillRect(bx + cx + x, by + cy + y, 1, 1);
         }
       }
     }
@@ -422,19 +417,10 @@ function renderGroup(range, codes) {
     hitMap.push({ code, bx: col * cellW, by: row * cellH, w: cellW, h: cellH });
   });
 
-  // Draw border for selected/active
+  // Draw shared marker (选中高亮由选区覆盖层绘制)
   codes.forEach((code, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
-    if (code === selectedCode) {
-      ctx.strokeStyle = '#f5c2e7';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(col * cellW + 0.5, row * cellH + 0.5, cellW - 1, cellH - 1);
-    } else if (selectedCodes.has(code)) {
-      ctx.strokeStyle = '#a6e3a1';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(col * cellW + 0.5, row * cellH + 0.5, cellW - 1, cellH - 1);
-    }
     if (font._sharedCodes && font._sharedCodes.has(code)) {
       ctx.fillStyle = '#f9e2af';
       ctx.fillRect(col * cellW + cellW - 4, row * cellH + 1, 3, 3);
@@ -490,6 +476,7 @@ function renderGroup(range, codes) {
     if (dragActive) {
       const x1 = Math.min(dragStartX, pt.x), x2 = Math.max(dragStartX, pt.x);
       const y1 = Math.min(dragStartY, pt.y), y2 = Math.max(dragStartY, pt.y);
+      const changed = [];
       for (const h of hitMap) {
         if (x2 > h.bx && x1 < h.bx + h.w && y2 > h.by && y1 < h.by + h.h) {
           if (e.ctrlKey || e.metaKey) {
@@ -497,11 +484,13 @@ function renderGroup(range, codes) {
           } else {
             selectedCodes.add(h.code);
           }
+          changed.push(h.code);
         }
       }
       syncGroupCheckboxes();
       updateBatchInfo();
-      rebuildCharGroups();
+      // 只刷新受影响的选区覆盖层画布
+      refreshSelectionVisuals(changed);
     } else {
       for (const h of hitMap) {
         if (pt.x >= h.bx && pt.x < h.bx + h.w && pt.y >= h.by && pt.y < h.by + h.h) {
@@ -510,7 +499,7 @@ function renderGroup(range, codes) {
             else selectedCodes.add(h.code);
             syncGroupCheckboxes();
             updateBatchInfo();
-            rebuildCharGroups();
+            refreshSelectionVisuals([h.code]);
           } else {
             selectChar(h.code);
             syncGroupCheckboxes();
@@ -524,22 +513,35 @@ function renderGroup(range, codes) {
 
   body.appendChild(canvas);
 
+  // 选区覆盖层:只绘制选中高亮,选中变化时无需重绘字符画布
+  const selCanvas = document.createElement('canvas');
+  selCanvas.width = canvas.width;
+  selCanvas.height = canvas.height;
+  selCanvas.style.cssText = 'position:absolute;pointer-events:none;';
+  canvas._selCanvas = selCanvas;
+  body.appendChild(selCanvas);
+  drawGroupSelection(canvas);
+
   header.addEventListener('click', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL' || e.target.tagName === 'BUTTON') return;
     body.classList.toggle('collapsed');
     toggle.textContent = body.classList.contains('collapsed') ? '❯' : '⌵';
+    // 展开时重绘选区覆盖层,确保位置与当前布局一致
+    if (!body.classList.contains('collapsed')) drawGroupSelection(canvas);
   });
 
   check.addEventListener('change', function() {
     const checked = this.checked;
+    const changed = [];
     for (const code of codes) {
       if (checked) selectedCodes.add(code);
       else selectedCodes.delete(code);
+      changed.push(code);
     }
     // Update all group checkboxes
     syncGroupCheckboxes();
     updateBatchInfo();
-    rebuildCharGroups();
+    refreshSelectionVisuals(changed);
   });
 
   addBtn.addEventListener('click', e => {
@@ -593,7 +595,7 @@ function rebuildCharGroups() {
   });
   charGroupList.scrollTop = scrollTop;
   syncGroupCheckboxes();
-  if (selectedCode !== null) addSelectionHighlight(selectedCode);
+  redrawAllGroupSelections();
 }
 
 // ==================== Search ====================
@@ -758,12 +760,11 @@ function getBatchEditCodesFromAll(allCodes) {
 function selectChar(code) {
   if (!font || !font.glyphs[code]) return;
   prepareGlyphEdit(code);
-  removeSelectionHighlight();
+  const prevSelected = selectedCode;
   if (code === selectedCode) {
     selectedCode = null;
   } else {
     selectedCode = code;
-    addSelectionHighlight(code);
   }
   document.querySelectorAll('.char-group-header.active').forEach(h => h.classList.remove('active'));
   if (selectedCode !== null) {
@@ -773,49 +774,71 @@ function selectChar(code) {
       if (el) el.classList.add('active');
     }
   }
+  refreshSelectionVisuals([prevSelected, selectedCode]);
   updateEditorAndRightPanel();
   updateBatchInfo();
 }
 
-function addSelectionHighlight(code) {
-  const range = getGroupForCode(code);
-  if (!range) return;
-  const g = charGroupList.querySelector(`.char-group[data-range-start="${range.start}"]`);
-  if (!g) return;
-  const body = g.querySelector('.char-group-body');
-  if (!body) return;
-  const canvas = body.querySelector('canvas');
-  if (!canvas) return;
+// 重绘指定字符所属分组的选区覆盖层画布
+function drawGroupSelection(canvas) {
+  const selCanvas = canvas._selCanvas;
+  if (!selCanvas) return;
+  // 根据当前布局对齐到字符画布边框盒(分组可能初始为折叠状态,故绘制时再定位)
+  const body = canvas.closest('.char-group-body');
+  if (body) {
+    selCanvas.style.left = canvas.offsetLeft + 'px';
+    selCanvas.style.top = canvas.offsetTop + 'px';
+  }
+  const ctx = selCanvas.getContext('2d');
+  ctx.clearRect(0, 0, selCanvas.width, selCanvas.height);
+  const group = canvas.closest('.char-group');
+  if (!group) return;
+  const start = parseInt(group.dataset.rangeStart);
+  const end = parseInt(group.dataset.rangeEnd);
   const cellW = Math.max(font.lines || 16, 8) + 2;
   const cellH = font.fontHeight + 2;
   const cols = Math.max(1, Math.floor(canvas.width / cellW));
   let idx = 0;
-  for (let c = range.start; c <= range.end; c++) {
-    if (font.glyphs[c]) {
-      if (c === code) break;
-      idx++;
+  for (let c = start; c <= end; c++) {
+    if (!font.glyphs[c]) continue;
+    if (c === selectedCode || selectedCodes.has(c)) {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      ctx.fillStyle = '#7777';
+      ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
+      ctx.strokeStyle = c === selectedCode ? '#f5c2e7' : '#a6e3a1';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(col * cellW + 0.5, row * cellH + 0.5, cellW - 1, cellH - 1);
     }
+    idx++;
   }
-  const col = idx % cols;
-  const row = Math.floor(idx / cols);
-  const br = body.getBoundingClientRect();
-  const cr = canvas.getBoundingClientRect();
-  const ox = cr.left - br.left;
-  const oy = cr.top - br.top;
-  const indicator = document.createElement('div');
-  indicator.className = 'selection-highlight';
-  indicator.style.cssText = `
-    position: absolute; left: ${ox + col * cellW}px; top: ${oy + row * cellH}px;
-    width: ${cellW}px; height: ${cellH}px;
-    border: 2px solid #f5c2e7; pointer-events: none; z-index: 9;
-    box-shadow: 0 0 6px #7777;
-  `;
-  body.style.position = 'relative';
-  body.appendChild(indicator);
 }
 
-function removeSelectionHighlight() {
-  charGroupList.querySelectorAll('.selection-highlight').forEach(el => el.remove());
+// 只刷新受影响的选区覆盖层画布(changedCodes 为发生变化的字符码点)
+function refreshSelectionVisuals(changedCodes) {
+  const affected = new Set();
+  const addCode = c => {
+    if (c === null || c === undefined) return;
+    const range = getGroupForCode(c);
+    if (range) affected.add(range.start);
+  };
+  for (const c of changedCodes) addCode(c);
+  if (selectedCode !== null) addCode(selectedCode);
+  for (const start of affected) {
+    const g = charGroupList.querySelector(`.char-group[data-range-start="${start}"]`);
+    if (!g) continue;
+    const canvas = g.querySelector('.char-group-body canvas');
+    if (canvas && canvas._selCanvas) drawGroupSelection(canvas);
+  }
+}
+
+// 全量重绘所有分组的选区覆盖层画布(整体重建字符列表后使用)
+function redrawAllGroupSelections() {
+  const groups = charGroupList.querySelectorAll('.char-group');
+  for (const g of groups) {
+    const canvas = g.querySelector('.char-group-body canvas');
+    if (canvas && canvas._selCanvas) drawGroupSelection(canvas);
+  }
 }
 
 function getGroupForCode(code) {
@@ -823,6 +846,53 @@ function getGroupForCode(code) {
     if (code >= range.start && code <= range.end) return range;
   }
   return null;
+}
+
+// 只重绘受影响字符的格子,不重建左侧字符列表 DOM/全部画布。
+// 用于字形内容发生变化但列表结构(分组、数量、布局)不变的场景(如系统字体转换)。
+function redrawGlyphCells(codes) {
+  const changed = new Set(codes);
+  const affectedStarts = new Set();
+  for (const code of changed) {
+    const range = getGroupForCode(code);
+    if (range) affectedStarts.add(range.start);
+  }
+  for (const start of affectedStarts) {
+    const group = charGroupList.querySelector(`.char-group[data-range-start="${start}"]`);
+    if (!group) continue;
+    const canvas = group.querySelector('.char-group-body canvas');
+    if (!canvas || !canvas._hitMap) continue;
+    const ctx = canvas.getContext('2d');
+    const cellW = Math.max(font.lines || 16, 8) + 2;
+    const cellH = font.fontHeight + 2;
+    const grpBg = bgColorVal === 'transparent' ? '#212121' : bgColorVal;
+    for (const h of canvas._hitMap) {
+      if (!changed.has(h.code)) continue;
+      // 清空该格背景
+      ctx.fillStyle = grpBg;
+      ctx.fillRect(h.bx, h.by, h.w, h.h);
+      const g = font.glyphs[h.code];
+      if (!g) continue;
+      // 字符像素(与 renderGroup 一致:bx+1 为格子内边距,字符居中)
+      ctx.fillStyle = fgColorVal;
+      const cx = Math.max(0, Math.floor((cellW - 2 - g.width) / 2));
+      const cy = Math.max(0, Math.floor((cellH - 2 - g.height) / 2));
+      for (let y = 0; y < g.height && y < cellH - 2; y++) {
+        for (let x = 0; x < g.width && x < cellW - 2; x++) {
+          if (g.pixels[y] && g.pixels[y][x]) {
+            ctx.fillRect(h.bx + 1 + cx + x, h.by + 1 + cy + y, 1, 1);
+          }
+        }
+      }
+      // 共享标记
+      if (font._sharedCodes && font._sharedCodes.has(h.code)) {
+        ctx.fillStyle = '#f9e2af';
+        ctx.fillRect(h.bx + cellW - 4, h.by + 1, 3, 3);
+      }
+    }
+    // 重绘该分组选区覆盖层(选中高亮)
+    if (canvas._selCanvas) drawGroupSelection(canvas);
+  }
 }
 
 function updateEditorAndRightPanel() {
@@ -886,10 +956,6 @@ function renderRulers() {
     return;
   }
 
-  const g = font.glyphs[selectedCode];
-  const w = g.width;
-  const h = g.height;
-
   // Canvas position relative to container
   const contRect = container.getBoundingClientRect();
   const edRect = editorCanvas.getBoundingClientRect();
@@ -909,16 +975,19 @@ function renderRulers() {
   tctx.font = '11px monospace';
   tctx.textAlign = 'center';
   tctx.textBaseline = 'top';
-  for (let x = 1; x <= w; x++) {
-    const px = canvasLeft + x * zoom - rulerSize;
-    if (px < 0) continue;
-    if (x % 5 === 0) {
+  // 显示可见范围内的全部整数坐标(含 0 及超出字形宽度的部分),使范围外辅助线也能落位
+  const tMinOff = Math.floor((rulerSize - canvasLeft) / zoom);
+  const tMaxOff = Math.ceil((contW - canvasLeft) / zoom);
+  for (let o = tMinOff; o <= tMaxOff; o++) {
+    const px = canvasLeft + o * zoom - rulerSize;
+    if (px < 0 || px > topCanvas.width) continue;
+    if (o % 5 === 0) {
       tctx.lineWidth = 2;
       tctx.beginPath();
       tctx.moveTo(px + 0.5, rulerSize);
       tctx.lineTo(px + 0.5, rulerSize - 9);
       tctx.stroke();
-      tctx.fillText(String(x), px, 1);
+      tctx.fillText(String(o), px, 1);
     } else {
       tctx.lineWidth = 1;
       tctx.beginPath();
@@ -939,16 +1008,18 @@ function renderRulers() {
   lctx.font = '11px monospace';
   lctx.textAlign = 'right';
   lctx.textBaseline = 'middle';
-  for (let y = 1; y <= h; y++) {
-    const py = canvasTop + y * zoom - rulerSize;
-    if (py < 0) continue;
-    if (y % 5 === 0) {
+  const lMinOff = Math.floor((rulerSize - canvasTop) / zoom);
+  const lMaxOff = Math.ceil((contH - canvasTop) / zoom);
+  for (let o = lMinOff; o <= lMaxOff; o++) {
+    const py = canvasTop + o * zoom - rulerSize;
+    if (py < 0 || py > leftCanvas.height) continue;
+    if (o % 5 === 0) {
       lctx.lineWidth = 2;
       lctx.beginPath();
       lctx.moveTo(rulerSize, py + 0.5);
       lctx.lineTo(rulerSize - 9, py + 0.5);
       lctx.stroke();
-      lctx.fillText(String(y), rulerSize - 4, py);
+      lctx.fillText(String(o), rulerSize - 4, py);
     } else {
       lctx.lineWidth = 1;
       lctx.beginPath();
@@ -1068,9 +1139,29 @@ function renderEditor() {
     ctx.stroke();
   }
 
+  // 画笔悬停预览:高亮受影响的格子并画出边界
+  drawBrushPreview(ctx, zoom);
+
   // Rulers
   renderRulers();
   renderGuides();
+}
+
+// 绘制画笔悬停时影响的格子(裁剪到画布内)
+function drawBrushPreview(ctx, zoom) {
+  if (!brushHover || !font || !selectedCode || !font.glyphs[selectedCode]) return;
+  const g = font.glyphs[selectedCode];
+  const { x0, y0, x1, y1 } = getBrushRange(brushHover.cx, brushHover.cy);
+  const w = g.width, h = g.height;
+  ctx.fillStyle = 'rgba(137,180,250,0.30)';
+  for (let y = Math.max(0, y0); y <= Math.min(h - 1, y1); y++) {
+    for (let x = Math.max(0, x0); x <= Math.min(w - 1, x1); x++) {
+      ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
+    }
+  }
+  ctx.strokeStyle = 'rgba(137,180,250,0.9)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x0 * zoom + 0.5, y0 * zoom + 0.5, (x1 - x0 + 1) * zoom - 1, (y1 - y0 + 1) * zoom - 1);
 }
 
 // Re-render rulers on window resize
@@ -1079,6 +1170,39 @@ window.addEventListener('resize', () => { renderRulers(); renderGuides(); });
 // Editor mouse interaction
 let editorDrawing = false;
 let editorErasing = false;
+
+// 画笔状态:大小为覆盖的正方形边长,brushHover 记录当前悬停格点用于预览
+let brushSize = 1;
+let brushHover = null;
+const MAX_BRUSH = 32;
+
+// 计算以 (cx, cy) 为中心的画笔覆盖的格子范围(可能越界,由调用方裁剪)
+function getBrushRange(cx, cy) {
+  const half = Math.floor(brushSize / 2);
+  return { x0: cx - half, y0: cy - half, x1: cx + brushSize - 1 - half, y1: cy + brushSize - 1 - half };
+}
+
+// 设置画笔大小并刷新预览与工具栏显示
+function setBrushSize(n) {
+  brushSize = Math.max(1, Math.min(MAX_BRUSH, n));
+  const label = $('brush-size-label');
+  if (label) label.textContent = '画笔: ' + brushSize;
+  renderEditor();
+}
+
+// 在编辑画布上按 +/- 或 [] 调整画笔大小
+document.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return;
+  if (e.repeat) return;
+  let next = null;
+  if (e.key === '+' || e.key === '=') next = brushSize + 1;
+  else if (e.key === '-' || e.key === '_') next = brushSize - 1;
+  else if (e.key === '[') next = brushSize - 1;
+  else if (e.key === ']') next = brushSize + 1;
+  if (next === null) return;
+  e.preventDefault();
+  setBrushSize(next);
+});
 
 editorCanvas.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -1092,13 +1216,32 @@ function getCanvasMouse(e) {
 
 editorCanvas.addEventListener('mousedown', e => {
   if (!font || !selectedCode || !font.glyphs[selectedCode]) return;
+  updateBrushHover(e);
   if (e.button === 0) { editorDrawing = true; editorErasing = false; }
   else if (e.button === 2) { editorDrawing = true; editorErasing = true; }
   editorSetPixel(e);
 });
 
+// 更新当前悬停格点,跨格点时刷新预览
+function updateBrushHover(e) {
+  const g = font.glyphs[selectedCode];
+  if (!g) { if (brushHover) { brushHover = null; renderEditor(); } return; }
+  const pt = getCanvasMouse(e);
+  const px = Math.floor(pt.mx / editorZoom);
+  const py = Math.floor(pt.my / editorZoom);
+  if (px < 0 || px >= g.width || py < 0 || py >= g.height) {
+    if (brushHover) { brushHover = null; renderEditor(); }
+    return;
+  }
+  if (!brushHover || brushHover.cx !== px || brushHover.cy !== py) {
+    brushHover = { cx: px, cy: py };
+    renderEditor();
+  }
+}
+
 editorCanvas.addEventListener('mousemove', e => {
   if (rulerDragging) return; // handled at document level
+  updateBrushHover(e);
   if (!editorDrawing) {
     if (e.buttons === 1) { editorDrawing = true; editorErasing = false; }
     else if (e.buttons === 2) { editorDrawing = true; editorErasing = true; }
@@ -1110,7 +1253,7 @@ editorCanvas.addEventListener('mousemove', e => {
 const editorMouseUpHandler = () => { editorDrawing = false; };
 document.addEventListener('mouseup', editorMouseUpHandler);
 
-editorCanvas.addEventListener('mouseleave', () => { editorDrawing = false; });
+editorCanvas.addEventListener('mouseleave', () => { editorDrawing = false; brushHover = null; renderEditor(); });
 
 function editorSetPixel(e) {
   const g = font.glyphs[selectedCode];
@@ -1123,57 +1266,128 @@ function editorSetPixel(e) {
 
   prepareGlyphEdit(selectedCode);
   const gg = font.glyphs[selectedCode];
-  gg.pixels[py][px] = editorErasing ? 0 : 1;
+  const { x0, y0, x1, y1 } = getBrushRange(px, py);
+  // 画笔覆盖的所有格子(裁剪到字形范围内)
+  for (let y = Math.max(0, y0); y <= Math.min(gg.height - 1, y1); y++) {
+    for (let x = Math.max(0, x0); x <= Math.min(gg.width - 1, x1); x++) {
+      gg.pixels[y][x] = editorErasing ? 0 : 1;
+    }
+  }
   renderEditor();
 }
 
-// ==================== Ruler Drag (Create Guides) ====================
-$('ruler-top').addEventListener('mousedown', e => {
-  if (!font || !selectedCode || !font.glyphs[selectedCode] || e.button !== 0) return;
-  if (!showRuler) return;
-  const g = font.glyphs[selectedCode];
+// ==================== Ruler Guides (Create/Move/Remove) ====================
+// 计算标尺点击位置对应的格点偏移(浮点)
+function getRulerOffset(e, orientation) {
   const zoom = editorZoom;
   const editorRect = editorCanvas.getBoundingClientRect();
-  const mx = (e.clientX - editorRect.left) * (editorCanvas.width / editorRect.width);
-  const offset = Math.round(mx / zoom);
-  rulerDragging = { orientation: 'v' };
-  guidePreview = { orientation: 'v', offset };
-  renderEditor();
-  e.preventDefault();
-});
-
-$('ruler-left').addEventListener('mousedown', e => {
-  if (!font || !selectedCode || !font.glyphs[selectedCode] || e.button !== 0) return;
-  if (!showRuler) return;
-  const g = font.glyphs[selectedCode];
-  const zoom = editorZoom;
-  const editorRect = editorCanvas.getBoundingClientRect();
+  if (orientation === 'v') {
+    const mx = (e.clientX - editorRect.left) * (editorCanvas.width / editorRect.width);
+    return mx / zoom;
+  }
   const my = (e.clientY - editorRect.top) * (editorCanvas.height / editorRect.height);
-  const offset = Math.round(my / zoom);
-  rulerDragging = { orientation: 'h' };
-  guidePreview = { orientation: 'h', offset };
+  return my / zoom;
+}
+
+// 查找指定方向、靠近 offsetFloat 的已有辅助线(容差不超过半格)
+function findGuideAt(orientation, offsetFloat) {
+  const tol = Math.min(0.5, 4 / editorZoom);
+  let best = null, bestDist = Infinity;
+  for (const guide of guides) {
+    if (guide.orientation !== orientation) continue;
+    const dist = Math.abs(guide.offset - offsetFloat);
+    if (dist < bestDist) { bestDist = dist; best = guide; }
+  }
+  return (best && bestDist <= tol) ? best : null;
+}
+
+// 是否已存在同方向同位置的辅助线
+function hasGuide(orientation, offset) {
+  return guides.some(g => g.orientation === orientation && g.offset === offset);
+}
+
+// 清除重复的辅助线
+function dedupeGuides() {
+  const seen = new Set();
+  guides = guides.filter(g => {
+    const key = g.orientation + ':' + g.offset;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// 标尺左键:点到已有辅助线则拖动移动,空白处则新建
+function startRulerDrag(e, orientation) {
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || e.button !== 0) return;
+  if (!showRuler) return;
+  const offsetFloat = getRulerOffset(e, orientation);
+  const existing = findGuideAt(orientation, offsetFloat);
+  if (existing) {
+    rulerDragging = { orientation, mode: 'move', guide: existing };
+    guidePreview = null;
+  } else {
+    // 不限制范围,允许在字符宽高范围外放置辅助线
+    const offset = Math.round(offsetFloat);
+    rulerDragging = { orientation, mode: 'create', offset };
+    guidePreview = { orientation, offset };
+  }
   renderEditor();
   e.preventDefault();
+}
+
+$('ruler-top').addEventListener('mousedown', e => startRulerDrag(e, 'v'));
+$('ruler-left').addEventListener('mousedown', e => startRulerDrag(e, 'h'));
+
+// 标尺悬停反馈:在辅助线上时显示 resize 光标
+$('ruler-top').addEventListener('mousemove', e => {
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || !showRuler) return;
+  $('ruler-top').style.cursor = findGuideAt('v', getRulerOffset(e, 'v')) ? 'ew-resize' : '';
 });
+$('ruler-top').addEventListener('mouseleave', () => { $('ruler-top').style.cursor = ''; });
+$('ruler-left').addEventListener('mousemove', e => {
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || !showRuler) return;
+  $('ruler-left').style.cursor = findGuideAt('h', getRulerOffset(e, 'h')) ? 'ns-resize' : '';
+});
+$('ruler-left').addEventListener('mouseleave', () => { $('ruler-left').style.cursor = ''; });
+
+// 标尺右键:移除辅助线
+function removeGuideAt(e, orientation) {
+  e.preventDefault();
+  if (!font || !selectedCode || !font.glyphs[selectedCode] || !showRuler) return;
+  const existing = findGuideAt(orientation, getRulerOffset(e, orientation));
+  if (existing) {
+    guides = guides.filter(g => g !== existing);
+    renderEditor();
+    showToast('已移除辅助线', false);
+  }
+}
+
+$('ruler-top').addEventListener('contextmenu', e => removeGuideAt(e, 'v'));
+$('ruler-left').addEventListener('contextmenu', e => removeGuideAt(e, 'h'));
 
 document.addEventListener('mousemove', e => {
   if (!rulerDragging || !font || !selectedCode || !font.glyphs[selectedCode]) return;
-  const g = font.glyphs[selectedCode];
-  const zoom = editorZoom;
-  const editorRect = editorCanvas.getBoundingClientRect();
-  if (rulerDragging.orientation === 'v') {
-    const mx = (e.clientX - editorRect.left) * (editorCanvas.width / editorRect.width);
-    guidePreview.offset = Math.round(mx / zoom);
+  const orientation = rulerDragging.orientation;
+  const offset = Math.round(getRulerOffset(e, orientation));
+  if (rulerDragging.mode === 'move') {
+    rulerDragging.guide.offset = offset;
   } else {
-    const my = (e.clientY - editorRect.top) * (editorCanvas.height / editorRect.height);
-    guidePreview.offset = Math.round(my / zoom);
+    rulerDragging.offset = offset;
+    guidePreview.offset = offset;
   }
   renderEditor();
 });
 
 document.addEventListener('mouseup', e => {
-  if (rulerDragging && guidePreview) {
-    guides.push({ orientation: guidePreview.orientation, offset: guidePreview.offset });
+  if (rulerDragging) {
+    if (rulerDragging.mode === 'create') {
+      const offset = rulerDragging.offset;
+      if (!hasGuide(rulerDragging.orientation, offset)) {
+        guides.push({ orientation: rulerDragging.orientation, offset });
+      }
+    }
+    dedupeGuides();
     renderEditor();
   }
   rulerDragging = null;
@@ -1540,6 +1754,29 @@ function applyShadowToPixels(pixels, w, h) {
   return out;
 }
 
+// 对 alpha 位图做垂直亚像素位移(像素插值法,线性插值):frac>0 内容下移,frac<0 内容上移。
+// 浏览器对 fillText 的分数 y 坐标强制取整,亚像素偏移无法靠绘制位置实现,
+// 因此改为在读取到的位图上插值完成,再按阈值二值化。
+function shiftAlphaVertical(alpha, w, h, frac) {
+  const nb = frac > 0 ? -1 : 1;
+  const f = Math.abs(frac);
+  const inv = 1 - f;
+  const out = new Float32Array(alpha.length);
+  for (let y = 0; y < h; y++) {
+    const y1 = y + nb;
+    const hasN1 = y1 >= 0 && y1 < h;
+    const b0 = y * w, b1 = y1 * w;
+    for (let x = 0; x < w; x++) {
+      const a1 = hasN1 ? alpha[b1 + x] : 0;
+      out[b0 + x] = alpha[b0 + x] * inv + a1 * f;
+    }
+  }
+  return out;
+}
+
+// 以原生分辨率(1:1)渲染系统字体文本,每个输出格取覆盖 alpha 并与阈值比较得到像素。
+// 按目标字号直接渲染,可保留点阵字体(如 SimSun 低位图 strike、Unifont 网格设计)的像素特征;
+// 不进行超采样,否则放大字号会使点阵字体失去位图特性(变模糊/丢像素)。
 function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, vertOffset = 0, fontStyle = 'normal', fineX = 0, fineY = 0) {
   const margin = 8;
   const cH = maxH + margin * 2;
@@ -1551,7 +1788,9 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
   let fontSize = maxH;
   ctx.font = `${fontStyle} ${fontSize}px "${fontFamily}"`;
   let metrics = ctx.measureText(char);
-  while ((metrics.width > maxW - 1 || fontSize > maxH) && fontSize > 4) {
+  // 仅在字宽超过槽位时收缩;不加 -1 裕量,否则全角汉字(advance≈15.x<16)会被误降到 15px,
+  // 破坏 16px 网格设计(Unifont)或选中错误的内嵌位图 strike(SimSun)。
+  while ((metrics.width > maxW || fontSize > maxH) && fontSize > 4) {
     fontSize--;
     ctx.font = `${fontStyle} ${fontSize}px "${fontFamily}"`;
     metrics = ctx.measureText(char);
@@ -1562,16 +1801,27 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
   const tw = Math.ceil(metrics.width);
-  const tx = Math.floor((maxW - tw) / 2);
+  // 微调偏移:fineX 作用于绘制位置(水平方向随后被裁剪,用于贴边时的亚像素细节);
+  // fineY 拆为整数部分(输出格定位)与小数部分(对位图做像素插值)实现亚像素位移。
+  const tx = Math.floor((maxW - tw) / 2) + fineX;
   const ty = Math.floor((cH - fontSize) / 2);
-  ctx.fillText(char, tx + fineX, ty + fineY);
+  ctx.fillText(char, tx, ty);
 
   const imageData = ctx.getImageData(0, 0, maxW, cH);
+  const rawAlpha = new Float32Array(maxW * cH);
+  for (let i = 0; i < maxW * cH; i++) rawAlpha[i] = imageData.data[i * 4 + 3];
+
+  // 亚像素 Y 偏移:浏览器栅格化会把 fillText 的分数 y 取整,绘制位置无法生效;
+  // fineY 小数部分改为对位图做垂直线性插值(shiftAlphaVertical),整数部分走 startY。
+  const fyInt = Math.round(fineY);
+  const fyFrac = fineY - fyInt;
+  const alpha = Math.abs(fyFrac) > 0.001 ? shiftAlphaVertical(rawAlpha, maxW, cH, fyFrac) : rawAlpha;
+
   const pixels = [];
   for (let y = 0; y < cH; y++) {
     const row = [];
     for (let x = 0; x < maxW; x++) {
-      row.push(imageData.data[(y * maxW + x) * 4 + 3] > threshold ? 1 : 0);
+      row.push(alpha[y * maxW + x] > threshold ? 1 : 0);
     }
     pixels.push(row);
   }
@@ -1588,8 +1838,8 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
   const charH = bottom - top + 1;
   const charW = right - left + 1;
 
-  // Position character directly in output (no vy offset needed)
-  const startY = Math.floor((outH - charH) / 2) + vertOffset;
+  // 输出定位:整数位移(含 fineY 的整数部分);fineY 小数部分已通过位图插值生效
+  const startY = Math.floor((outH - charH) / 2) + vertOffset + fyInt;
   const startX = Math.floor((maxW - charW) / 2);
 
   const result = [];
@@ -1659,14 +1909,15 @@ $('sys-font-convert').addEventListener('click', () => {
   if (!shouldSeparate() && font._sharedCodes && codes.length > 1) codes = codes.filter(c => !font._sharedCodes.has(c));
   if (codes.length === 0) { showToast('没有可操作的字符（共享字符已跳过）', true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
-  let count = 0;
+  const converted = [];
   for (const code of codes) {
-    if (convertGlyphFromSystemFont(code, family, threshold)) count++;
+    if (convertGlyphFromSystemFont(code, family, threshold)) converted.push(code);
   }
-  showToast(`已转换 ${count} 个字符为系统字体 "${family}"`, false);
+  showToast(`已转换 ${converted.length} 个字符为系统字体 "${family}"`, false);
   updateEditorAndRightPanel();
   renderPreview();
-  rebuildCharGroups();
+  // 只重绘受影响字符的格子,避免整棵字符列表重建(转换不会改变列表结构)
+  if (converted.length > 0) redrawGlyphCells(converted);
 });
 
 $('sys-font-convert-all').addEventListener('click', () => {
@@ -2453,7 +2704,8 @@ function renderConvPreview() {
     const mCtx = document.createElement('canvas').getContext('2d');
     mCtx.font = `${fontStyle} ${baseFontSize}px "${family}"`;
     let m = mCtx.measureText(ch);
-    while ((m.width > maxW - 1 || baseFontSize > maxH) && baseFontSize > 4) {
+    // 与 renderSystemFontChar 一致:不加 -1 裕量,避免全角汉字被误降到 15px
+    while ((m.width > maxW || baseFontSize > maxH) && baseFontSize > 4) {
       baseFontSize--;
       mCtx.font = `${fontStyle} ${baseFontSize}px "${family}"`;
       m = mCtx.measureText(ch);
@@ -2466,7 +2718,8 @@ function renderConvPreview() {
     const mCtx = document.createElement('canvas').getContext('2d');
     mCtx.font = `${fontStyle} ${sysBaseFontSize}px "${family}"`;
     let m = mCtx.measureText(ch);
-    while ((m.width > 14 || sysBaseFontSize > 15) && sysBaseFontSize > 4) {
+    // 与主转换逻辑一致:不加 -1 裕量,避免全角汉字被误降到 14px
+    while ((m.width > 15 || sysBaseFontSize > 15) && sysBaseFontSize > 4) {
       sysBaseFontSize--;
       mCtx.font = `${fontStyle} ${sysBaseFontSize}px "${family}"`;
       m = mCtx.measureText(ch);
@@ -2503,16 +2756,27 @@ function renderConvPreview() {
     rawCtx.textAlign = 'left';
     const rawM = rawCtx.measureText(ch);
     const rw = Math.ceil(rawM.width);
-    const rx = Math.floor((maxW - rw) / 2);
+    // 原生分辨率绘制,与 renderSystemFontChar 一致(fineY 小数部分通过位图插值实现)
+    const rx = Math.floor((maxW - rw) / 2) + fineX;
     const ry = Math.floor((cH - baseFontSize) / 2);
-    rawCtx.fillText(ch, rx + fineX, ry + fineY);
+    rawCtx.fillText(ch, rx, ry);
 
-    // Find content bounds from raw rendering (same as renderSystemFontChar, no threshold)
+    // 每个输出格的 alpha 覆盖值
     const rId = rawCtx.getImageData(0, 0, maxW, cH);
+    const rAlphaRaw = new Float32Array(maxW * cH);
+    for (let y = 0; y < cH; y++)
+      for (let x = 0; x < maxW; x++)
+        rAlphaRaw[y * maxW + x] = rId.data[(y * maxW + x) * 4 + 3];
+
+    // 与转换一致的亚像素 Y 插值(预览需与最终像素结果吻合)
+    const fyFrac = fineY - Math.round(fineY);
+    const rAlpha = Math.abs(fyFrac) > 0.001 ? shiftAlphaVertical(rAlphaRaw, maxW, cH, fyFrac) : rAlphaRaw;
+
+    // Find content bounds from raw rendering (no threshold)
     let rl = maxW, rr = 0, rt = cH, rb = 0;
     for (let y = 0; y < cH; y++)
       for (let x = 0; x < maxW; x++)
-        if (rId.data[(y * maxW + x) * 4 + 3] > 0) {
+        if (rAlpha[y * maxW + x] > 0) {
           if (x < rl) rl = x; if (x > rr) rr = x;
           if (y < rt) rt = y; if (y > rb) rb = y;
         }
@@ -2527,7 +2791,7 @@ function renderConvPreview() {
       const roh = Math.min(font.fontHeight, maxH);
       const rch = rb - rt + 1;
       const rcw = rr - rl + 1;
-      const rsy = Math.floor((roh - rch) / 2) + vertOffset;
+      const rsy = Math.floor((roh - rch) / 2) + vertOffset + Math.round(fineY);
       const rsx = Math.floor((maxW - rcw) / 2);
       // Build maxW-wide result (same centering as renderSystemFontChar), then trim empty columns
       const rResult = [];
@@ -2537,7 +2801,7 @@ function renderConvPreview() {
           const srcY = rt + y - rsy;
           const srcX = rl + x - rsx;
           if (srcY >= 0 && srcY < cH && srcX >= 0 && srcX < maxW) {
-            row.push(rId.data[(srcY * maxW + srcX) * 4 + 3]);
+            row.push(rAlpha[srcY * maxW + srcX]);
           } else {
             row.push(0);
           }
