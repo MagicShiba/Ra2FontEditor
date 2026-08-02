@@ -1914,6 +1914,17 @@ function applyShadowToPixels(pixels, w, h) {
   return out;
 }
 
+// 参考字形顶部到基线的距离,作为系统字体转换时的统一基线高度。
+// 优先用中文字形(汉字通常占满字面高度,顶部贴网格),纯英文/符号字体回退到大写字母,再回退到 0.8 倍字号。
+function getFontBaselineAscent(ctx, fontStyle, fontFamily, fontSize) {
+  ctx.font = `${fontStyle} ${fontSize}px "${fontFamily}"`;
+  const cjk = ctx.measureText('中');
+  if (cjk.actualBoundingBoxAscent && cjk.actualBoundingBoxAscent > 0) return cjk.actualBoundingBoxAscent;
+  const lat = ctx.measureText('A');
+  if (lat.actualBoundingBoxAscent && lat.actualBoundingBoxAscent > 0) return lat.actualBoundingBoxAscent;
+  return Math.round(fontSize * 0.8);
+}
+
 // 对 alpha 位图做垂直亚像素位移(像素插值法,线性插值):frac>0 内容下移,frac<0 内容上移。
 // 浏览器对 fillText 的分数 y 坐标强制取整,亚像素偏移无法靠绘制位置实现,
 // 因此改为在读取到的位图上插值完成,再按阈值二值化。
@@ -1958,14 +1969,16 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
 
   ctx.clearRect(0, 0, maxW, cH);
   ctx.fillStyle = '#fff';
-  ctx.textBaseline = 'top';
+  // 用基线(alphabet)绘制,输出时统一按基线对齐,避免内容垂直居中导致 '_' 等基线下方字符错位成 '-'
+  ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
   const tw = Math.ceil(metrics.width);
   // 微调偏移:fineX 作用于绘制位置(水平方向随后被裁剪,用于贴边时的亚像素细节);
   // fineY 拆为整数部分(输出格定位)与小数部分(对位图做像素插值)实现亚像素位移。
   const tx = Math.floor((maxW - tw) / 2) + fineX;
-  const ty = Math.floor((cH - fontSize) / 2);
-  ctx.fillText(char, tx, ty);
+  // 基线画在画布中偏上位置,给字母下伸/下降部分(如 g、_、, )留足空间;输出时按参考基线映射到网格
+  const baseY = Math.floor(cH * 0.75);
+  ctx.fillText(char, tx, baseY);
 
   const imageData = ctx.getImageData(0, 0, maxW, cH);
   const rawAlpha = new Float32Array(maxW * cH);
@@ -1998,8 +2011,15 @@ function renderSystemFontChar(char, fontFamily, maxW, maxH, threshold = 128, ver
   const charH = bottom - top + 1;
   const charW = right - left + 1;
 
-  // 输出定位:整数位移(含 fineY 的整数部分);fineY 小数部分已通过位图插值生效
-  const startY = Math.floor((outH - charH) / 2) + vertOffset + fyInt;
+  // 输出定位:基线对齐而非内容居中。参考字形(汉字/大写)顶部贴网格顶,
+  // 其余字符按各自基线同列放置,避免 '_' 这类基线下方字符被居中变成 '-';
+  // vertOffset 与 fineY 整数部分仍作为整体微调生效。
+  const targetBaseRow = getFontBaselineAscent(ctx, fontStyle, fontFamily, fontSize) + vertOffset + fyInt;
+  let startY = targetBaseRow - (baseY - top);
+  // 溢出保护:内容不得整体超出格子范围,避免格子过矮(字号>字体可容纳高度)时下伸字符消失
+  const minStart = 0, maxStart = Math.max(0, outH - charH);
+  if (startY > maxStart) startY = maxStart;
+  if (startY < minStart) startY = minStart;
   const startX = Math.floor((maxW - charW) / 2);
 
   const result = [];
@@ -2912,14 +2932,15 @@ function renderConvPreview() {
     rawCtx.clearRect(0, 0, maxW, cH);
     rawCtx.font = `${fontStyle} ${baseFontSize}px "${family}"`;
     rawCtx.fillStyle = '#fff';
-    rawCtx.textBaseline = 'top';
+    // 与 renderSystemFontChar 一致:基线绘制,输出按统一基线对齐
+    rawCtx.textBaseline = 'alphabetic';
     rawCtx.textAlign = 'left';
     const rawM = rawCtx.measureText(ch);
     const rw = Math.ceil(rawM.width);
     // 原生分辨率绘制,与 renderSystemFontChar 一致(fineY 小数部分通过位图插值实现)
     const rx = Math.floor((maxW - rw) / 2) + fineX;
-    const ry = Math.floor((cH - baseFontSize) / 2);
-    rawCtx.fillText(ch, rx, ry);
+    const rBaseY = Math.floor(cH * 0.75);
+    rawCtx.fillText(ch, rx, rBaseY);
 
     // 每个输出格的 alpha 覆盖值
     const rId = rawCtx.getImageData(0, 0, maxW, cH);
@@ -2951,7 +2972,11 @@ function renderConvPreview() {
       const roh = Math.min(font.fontHeight, maxH);
       const rch = rb - rt + 1;
       const rcw = rr - rl + 1;
-      const rsy = Math.floor((roh - rch) / 2) + vertOffset + Math.round(fineY);
+      const rTargetBase = getFontBaselineAscent(rawCtx, fontStyle, family, baseFontSize) + vertOffset + Math.round(fineY);
+      let rsy = rTargetBase - (rBaseY - rt);
+      const rMinStart = 0, rMaxStart = Math.max(0, roh - rch);
+      if (rsy > rMaxStart) rsy = rMaxStart;
+      if (rsy < rMinStart) rsy = rMinStart;
       const rsx = Math.floor((maxW - rcw) / 2);
       // Build maxW-wide result (same centering as renderSystemFontChar), then trim empty columns
       const rResult = [];
