@@ -102,7 +102,8 @@ button.primary:hover { background: #b3b; }
 .char-group-header:hover { background: #313131;}
 .char-group-header.active { background:#313131; }
 .char-group-header.active .label { color: #FFF300; }
-.char-group-header .toggle {width: 14px; }
+.char-group-header .toggle {width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: transform 0.15s; transform-origin: center; }
+.char-group-header .toggle.open { transform: rotate(90deg); }
 .char-group-header .label { flex: 1; color: #eee; }
 .char-group-header .label:hover{ color: #FFF300; }
 .char-group-header .count { color: #757; font-size: 11px; }
@@ -371,6 +372,13 @@ cursor: pointer;
 .modal-char-item .char-preview { font-size: 22px;}
 .modal-char-item .char-code { color: #777; font-family: monospace; font-size: 11px; }
 .modal-char-item .char-name { display: none; }
+
+/* === Batch Conversion Progress === */
+#convert-progress-overlay .modal-box { width: 400px; max-width: 90%; }
+.modal-progress-body { padding: 8px 0; }
+.progress-track { height: 18px; background: #111; border: 1px solid #555; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0%; background: #b7b; transition: width .1s linear; }
+.progress-label { margin-top: 6px; font-size: 12px; color: #ccc; text-align: center; }
 
 /* Conv slider grid */
 .conv-slider-grid {

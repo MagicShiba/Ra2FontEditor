@@ -238,7 +238,7 @@ function parseFont(data) {
     const sharedCodes = new Set();
     for (const codes of Object.values(symToCodes))
       if (codes.length > 1) codes.forEach(c => sharedCodes.add(c));
-    font = { isUnicode, fontWidth: spaceWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, fontTypeEn, _raw: data, _sharedCodes: sharedCodes, _magic: magic, _count: count };
+    font = { isUnicode, fontWidth: spaceWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, fontTypeEn, _raw: data, _sharedCodes: sharedCodes, _magic: magic, _count: count, _appliedW: fontDataHeight };
   } else {
     const fontWidth = readU32LE(dv, 0x04);
     stride = readU32LE(dv, 0x08);
@@ -265,7 +265,7 @@ function parseFont(data) {
       const pixels = decodePixels(imgData, symWidth, fontDataHeight, stride);
       glyphs[code] = makeGlyph(pixels, symWidth, fontDataHeight, fontHeight);
     }
-    font = { isUnicode, fontWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, fontTypeEn, _raw: data, _startSym: startSym, _endSym: endSym, _magic: magic, _glyphCount: glyphCount, _bpp: dword10 };
+    font = { isUnicode, fontWidth, stride, lines: fontDataHeight, fontHeight, symDataSize, glyphs, fontType, fontTypeEn, _raw: data, _startSym: startSym, _endSym: endSym, _magic: magic, _glyphCount: glyphCount, _bpp: dword10, _appliedW: fontDataHeight };
   }
 
   renderInfoGrid();
@@ -549,7 +549,7 @@ function renderGroup(range, codes) {
   header.addEventListener('click', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL' || e.target.tagName === 'BUTTON') return;
     body.classList.toggle('collapsed');
-    toggle.textContent = body.classList.contains('collapsed') ? '❯' : '⌵';
+    toggle.classList.toggle('open', !body.classList.contains('collapsed'));
     // 展开时重绘选区覆盖层,确保位置与当前布局一致
     if (!body.classList.contains('collapsed')) drawGroupSelection(canvas);
   });
@@ -611,10 +611,10 @@ function rebuildCharGroups() {
     const toggle = g.querySelector('.toggle');
     if (collapseStates[start]) {
       body.classList.add('collapsed');
-      toggle.textContent = '❯';
+      toggle.classList.remove('open');
     } else {
       body.classList.remove('collapsed');
-      toggle.textContent = '⌵';
+      toggle.classList.add('open');
     }
   });
   charGroupList.scrollTop = scrollTop;
@@ -652,7 +652,7 @@ searchInput.addEventListener('input', () => {
         g.style.display = '';
         const body = g.querySelector('.char-group-body');
         body.classList.remove('collapsed');
-        g.querySelector('.toggle').textContent = '▾';
+        g.querySelector('.toggle').classList.add('open');
         targetGroup = g;
       } else {
         g.style.display = 'none';
@@ -1349,6 +1349,45 @@ document.addEventListener('keydown', e => {
   if (next === null) return;
   e.preventDefault();
   setBrushSize(next);
+});
+
+// ==================== Arrow Key Glyph Navigation ====================
+// 有序字符列表(按分组范围、组内码点升序),用于方向键切换字符;字形集合变化时重建
+let _orderedGlyphCodes = null;
+let _orderedGlyphSize = -1;
+function getOrderedGlyphCodes() {
+  const size = font.glyphs ? Object.keys(font.glyphs).length : 0;
+  if (_orderedGlyphCodes && _orderedGlyphSize === size) return _orderedGlyphCodes;
+  const codes = [];
+  for (const range of UNICODE_RANGES) {
+    for (let c = range.start; c <= range.end; c++) {
+      if (font.glyphs[c]) codes.push(c);
+    }
+  }
+  _orderedGlyphCodes = codes;
+  _orderedGlyphSize = size;
+  return codes;
+}
+
+// 方向键切换字符:左/右相邻字符,上/下按分组网格列数跳转(与左侧字符网格布局一致)
+document.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!font || selectedCode === null) return;
+  if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+  const codes = getOrderedGlyphCodes();
+  const idx = codes.indexOf(selectedCode);
+  if (idx < 0) return;
+  const cellW = Math.max(font.lines || 16, 8) + 2;
+  const cols = Math.max(1, Math.floor(((charGroupList.clientWidth || 240) - 8) / cellW));
+  let next = -1;
+  if (e.key === 'ArrowLeft') next = idx - 1;
+  else if (e.key === 'ArrowRight') next = idx + 1;
+  else if (e.key === 'ArrowUp') next = idx - cols;
+  else if (e.key === 'ArrowDown') next = idx + cols;
+  if (next < 0 || next >= codes.length) return;
+  e.preventDefault();
+  selectChar(codes[next]);
 });
 
 editorCanvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -2081,7 +2120,103 @@ function convertGlyphFromSystemFont(code, fontFamily, threshold = 128) {
   return true;
 }
 
-$('sys-font-convert').addEventListener('click', () => {
+// ==================== Async Batch System Font Conversion ====================
+// 系统字体渲染(renderSystemFontChar)依赖 DOM Canvas(measureText/fillText/getImageData),
+// 无法放入 Web Worker;改用分块异步处理,每批字符处理后让出主线程(await),避免长时间
+// 占用主线程导致页面卡死或浏览器提示无响应,同时显示进度浮层并支持取消。
+let _convertRunning = false;
+
+// 显示转换进度浮层,返回更新进度/取消回调所需的句柄
+function showConvertProgress(total, onCancel) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.id = 'convert-progress-overlay';
+  const box = document.createElement('div');
+  box.className = 'modal-box';
+  const header = document.createElement('div');
+  header.className = 'modal-header';
+  const title = document.createElement('span');
+  title.className = 'modal-title';
+  title.textContent = t('convert.inProgress', { done: 0, total });
+  header.appendChild(title);
+  const body = document.createElement('div');
+  body.className = 'modal-progress-body';
+  const track = document.createElement('div');
+  track.className = 'progress-track';
+  const fill = document.createElement('div');
+  fill.className = 'progress-fill';
+  track.appendChild(fill);
+  const label = document.createElement('div');
+  label.className = 'progress-label';
+  body.appendChild(track);
+  body.appendChild(label);
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = t('modal.cancel');
+  cancelBtn.addEventListener('click', onCancel);
+  footer.appendChild(cancelBtn);
+  box.appendChild(header);
+  box.appendChild(body);
+  box.appendChild(footer);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  return { fill, label, title, overlay };
+}
+
+// 分块异步转换:codes 待处理字符,convertOne(code) 返回 true 表示成功。
+// 少量字符(<500)直接同步转换,不显示进度浮层;大量字符分块异步并节流更新进度,
+// 每 max(50, total/1%) 个字符才更新一次界面,降低频繁 DOM 更新的性能开销。
+// 返回实际转换的字符列表,cancelled 标记是否被用户取消。
+// 注意:_convertRunning 的置位/复位统一在此函数内管理(try/finally 保证所有分支复位),
+// 避免小量同步分支提前 return 导致标志残留为 true,后续转换被静默拦截。
+async function runChunkedConversion(codes, convertOne, chunkSize = 8) {
+  if (_convertRunning) return { converted: [], cancelled: false, skipped: true };
+  _convertRunning = true;
+  try {
+    const total = codes.length;
+    const converted = [];
+
+    // 少量转换:同步完成,避免进度浮层的创建与更新开销
+    if (total < 500) {
+      for (const code of codes) {
+        if (convertOne(code)) converted.push(code);
+      }
+      return { converted, cancelled: false };
+    }
+
+    // 大量转换:分块异步 + 节流更新进度(每50个或每1%取较大者)
+    const throttle = Math.max(50, Math.ceil(total / 100));
+    let cancelled = false;
+    const cancel = () => { cancelled = true; };
+    const { fill, label, title, overlay } = showConvertProgress(total, cancel);
+    let nextUpdate = throttle;
+    for (let i = 0; i < total && !cancelled; i += chunkSize) {
+      const end = Math.min(i + chunkSize, total);
+      for (let j = i; j < end; j++) {
+        if (convertOne(codes[j])) converted.push(codes[j]);
+      }
+      const done = Math.min(end, total);
+      // 到达节流点或转换完成时更新一次界面
+      if (done >= nextUpdate || done === total) {
+        nextUpdate += throttle;
+        const pct = Math.round(done / total * 100);
+        fill.style.width = pct + '%';
+        label.textContent = t('convert.inProgress', { done, total }) + ` (${pct}%)`;
+        title.textContent = t('convert.inProgress', { done, total });
+      }
+      // 让出主线程,浏览器可重绘进度并响应其他事件
+      await new Promise(r => setTimeout(r, 0));
+    }
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    return { converted, cancelled };
+  } finally {
+    _convertRunning = false;
+  }
+}
+
+$('sys-font-convert').addEventListener('click', async () => {
+  if (_convertRunning) return;
   const family = sysFontFamily.value.trim();
   if (!family) { showToast(t('toast.enterFont'), true); return; }
   let codes = getSelectedGlyphCodes();
@@ -2090,29 +2225,26 @@ $('sys-font-convert').addEventListener('click', () => {
   if (!shouldSeparate() && font._sharedCodes && codes.length > 1) codes = codes.filter(c => !font._sharedCodes.has(c));
   if (codes.length === 0) { showToast(t('toast.sharedSkipped'), true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
-  const converted = [];
-  for (const code of codes) {
-    if (convertGlyphFromSystemFont(code, family, threshold)) converted.push(code);
-  }
-  showToast(t('toast.converted', { n: converted.length, family }), false);
+  const { converted, cancelled, skipped } = await runChunkedConversion(codes, code => convertGlyphFromSystemFont(code, family, threshold));
+  if (skipped) return;
+  showToast(cancelled ? t('convert.cancelled', { n: converted.length }) : t('toast.converted', { n: converted.length, family }), false);
   updateEditorAndRightPanel();
   renderPreview();
   // 只重绘受影响字符的格子,避免整棵字符列表重建(转换不会改变列表结构)
   if (converted.length > 0) redrawGlyphCells(converted);
 });
 
-$('sys-font-convert-all').addEventListener('click', () => {
+$('sys-font-convert-all').addEventListener('click', async () => {
+  if (_convertRunning) return;
   const family = sysFontFamily.value.trim();
   if (!family) { showToast(t('toast.enterFont'), true); return; }
   const threshold = parseInt($('conv-threshold').value) || 128;
   const allCodes = Object.keys(font.glyphs).map(Number);
   const codes = getBatchEditCodesFromAll(allCodes);
   if (codes.length === 0) { showToast(t('toast.noChars'), true); return; }
-  let count = 0;
-  for (const code of codes) {
-    if (convertGlyphFromSystemFont(code, family, threshold)) count++;
-  }
-  showToast(t('toast.convertedAll', { n: count, family }), false);
+  const { converted, cancelled, skipped } = await runChunkedConversion(codes, code => convertGlyphFromSystemFont(code, family, threshold));
+  if (skipped) return;
+  showToast(cancelled ? t('convert.cancelled', { n: converted.length }) : t('toast.convertedAll', { n: converted.length, family }), false);
   updateEditorAndRightPanel();
   renderPreview();
   rebuildCharGroups();
@@ -2157,11 +2289,7 @@ function openAddMissingModal(range) {
     const code = missing[i];
     const item = document.createElement('div');
     item.className = 'modal-char-item';
-    item.addEventListener('click', () => {
-      const checked = item.classList.toggle('checked');
-      if (checked) selectedSet.add(code);
-      else selectedSet.delete(code);
-    });
+    item.dataset.code = code;
     const preview = document.createElement('div');
     preview.className = 'char-preview';
     try { preview.textContent = String.fromCodePoint(code); } catch(e) { preview.textContent = '?'; }
@@ -2179,6 +2307,59 @@ function openAddMissingModal(range) {
     note.textContent = t('modal.moreChars', { n: missing.length - 1000 });
     body.appendChild(note);
   }
+
+  // ===== 选择交互:左键拖动批量选中,右键拖动批量取消,单击切换 =====
+  // 设置/取消单个字符的选中状态(item 上直接存 code,避免遍历查找)
+  function setItemChecked(item, on) {
+    const code = Number(item.dataset.code);
+    if (on) selectedSet.add(code);
+    else selectedSet.delete(code);
+    item.classList.toggle('checked', on);
+  }
+  // 根据鼠标坐标获取命中的字符项
+  function itemAtPoint(x, y) {
+    const t = document.elementFromPoint(x, y);
+    return t ? t.closest('.modal-char-item') : null;
+  }
+  let drag = null; // { mode: 'select' | 'unselect', startX, startY, moved, last }
+  // 阻止右键弹出系统菜单(右键用于批量取消)
+  body.addEventListener('contextmenu', e => e.preventDefault());
+  body.addEventListener('mousedown', e => {
+    if (e.button !== 0 && e.button !== 2) return;
+    e.preventDefault();
+    drag = {
+      mode: e.button === 0 ? 'select' : 'unselect',
+      startX: e.clientX, startY: e.clientY,
+      moved: false, last: null
+    };
+  });
+  // 拖动超过阈值判定为拖动,按经过的字符批量选中/取消
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientX - drag.startX) < 4 && Math.abs(e.clientY - drag.startY) < 4) return;
+      drag.moved = true;
+      // 进入拖动时,起始处字符也应用当前模式
+      const start = itemAtPoint(drag.startX, drag.startY);
+      if (start) { drag.last = start; setItemChecked(start, drag.mode === 'select'); }
+    }
+    const item = itemAtPoint(e.clientX, e.clientY);
+    if (!item || item === drag.last) return;
+    drag.last = item;
+    setItemChecked(item, drag.mode === 'select');
+  });
+  // 松开时:拖动则结束;未拖动视为单击,左键切换、右键取消
+  document.addEventListener('mouseup', e => {
+    if (!drag) return;
+    const { mode, moved } = drag;
+    drag = null;
+    if (!moved) {
+      const item = itemAtPoint(e.clientX, e.clientY);
+      if (!item) return;
+      if (mode === 'select') setItemChecked(item, !item.classList.contains('checked'));
+      else setItemChecked(item, false);
+    }
+  });
 
   const footer = document.createElement('div');
   footer.className = 'modal-footer';
@@ -2209,7 +2390,10 @@ function openAddMissingModal(range) {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-  function close() { document.body.removeChild(overlay); }
+  function close() {
+    drag = null;
+    document.body.removeChild(overlay);
+  }
   closeBtn.addEventListener('click', close);
   cancelBtn.addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
@@ -2419,23 +2603,44 @@ $('apply-font-size').addEventListener('click', () => {
   if (isNaN(newH) || newH < 1 || newH > 255) return;
 
   font.lines = newW;
-  if (newH !== font.fontHeight) {
-    // Resize all glyphs
-    const oldH = font.fontHeight;
+  // 宽度调整:只裁不扩——字形宽度超出 newW 时丢弃多余列,宽度不足的字符保持原样。
+  // 通过 _appliedW 记录上次应用宽度,仅当宽度输入发生变化时才执行裁剪,避免仅改高度时误裁。
+  if (font._appliedW !== newW) {
+    for (const code in font.glyphs) {
+      const g = font.glyphs[code];
+      if (g.width > newW) {
+        prepareGlyphEdit(code);
+        g.pixels = g.pixels.map(row => row.slice(0, newW));
+        g.width = newW;
+      }
+    }
+    font._appliedW = newW;
+  }
+  // 判断依据字形实际高度而非 font.fontHeight:部分字体 fontDataHeight(0x0C)与
+  // fontHeight(0x10)不一致(如 game_微软雅黑.fnt:字形高18、字身高17),若仅比较
+  // fontHeight,输入等于当前 fontHeight 时会跳过字形调整,导致高度设置"不生效"。
+  let needResize = false;
+  for (const code in font.glyphs) {
+    if (font.glyphs[code].height !== newH) { needResize = true; break; }
+  }
+  if (needResize) {
+    // Resize all glyphs to target height
     for (const code in font.glyphs) {
       prepareGlyphEdit(code);
       const g = font.glyphs[code];
-      if (newH > oldH) {
+      if (newH > g.height) {
         // Add rows at bottom
-        for (let y = oldH; y < newH; y++)
+        for (let y = g.height; y < newH; y++)
           g.pixels.push(new Array(g.width).fill(0));
-      } else if (newH < oldH) {
+      } else if (newH < g.height) {
         g.pixels = g.pixels.slice(0, newH);
       }
       g.height = newH;
     }
-    font.fontHeight = newH;
   }
+  // 宽度与高度独立生效:宽度(newW)保留为数据高度 font.lines(0x0C),
+  // 高度(newH)用于字形高度与字身高度 fontHeight(0x10),互不覆盖。
+  font.fontHeight = newH;
 
   showToast(t('toast.fontSizeUpdated', { w: newW, h: newH }), false);
   updateEditorAndRightPanel();
@@ -2467,7 +2672,7 @@ navDropdown.addEventListener('change', () => {
   if (target) {
     const body = target.querySelector('.char-group-body');
     body.classList.remove('collapsed');
-    target.querySelector('.toggle').textContent = '⌵';
+    target.querySelector('.toggle').classList.add('open');
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   navDropdown.selectedIndex = 0;
